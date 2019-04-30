@@ -1,0 +1,46 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+Local	$dbname = @ScriptDir & "\" & "Baixa Datéis.mdb"
+Local	$tblname = "01_Dateis"
+Local	$title = "n.ok"
+
+Const $adCmdText = 0x0001
+local $x
+local $xx
+
+LOCAL $adoCon = ObjCreate("ADODB.Connection")
+
+;$adoCon.Open("Driver={Microsoft Access Driver (*.mdb)}; DBQ=" & $dbname) ;Use this line if using MS Access 2003 and lower
+$adoCon.Open ("Provider=Microsoft.Jet.OLEDB.4.0; Data Source=" & $dbname) ;Use this line if using MS Access 2007 and using the .accdb file extension
+
+MsgBox(0,"",$adoCon.state)
+
+;~ $adoCon.Execute("Insert into " & $tblname & " (cliente) values ('**** cliente ****') " )
+
+   for $x=1 to 10
+	  $xx = $x
+	  Sleep(1000)
+	  MsgBox(0,"",$xx)
+	  $adoCon.Execute("Insert into " & $tblname & " (cliente) values ('**** cliente **** "& $xx & "') ")
+	  Sleep(1000)
+   next
+
+
+if $adoCon.state = 1 Then
+
+   MsgBox(0,"testing","ok!")
+Else
+   MsgBox(0,"testing",$title)
+EndIf
+
+$adoCon.Close
+
+

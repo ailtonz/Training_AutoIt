@@ -1,0 +1,15 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+; RunWait Example
+RunWait('Calc')
+RunWait('Notepad')
+MsgBox(64, 'Functions', 'I started Calculator and then Notepad.')
+

@@ -1,0 +1,16 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+2533166
+#include <MsgBoxConstants.au3>
+Global $begin = TimerInit() ; Captura início da execução do Robo
+Sleep(60000)
+MsgBox($MB_SYSTEMMODAL, "", "Fim da automação - " & TimerInit() & " " & CHR(13) & "Tempo de Execução: " & (Round(((TimerDiff($begin)/1000) / 3600),4)))
+

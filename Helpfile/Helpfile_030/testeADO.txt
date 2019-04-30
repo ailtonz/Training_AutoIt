@@ -1,0 +1,38 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+Global Const $iCursorType = 0 ; adOpenForwardOnly
+Global Const $iLockType = 1 ; adLockReadOnly
+Global Const $iOptions = 2 ; adCmdTable
+
+Global $oADOConnection = ObjCreate("ADODB.Connection") ; Create a connection object
+Global $oADORecordset = ObjCreate("ADODB.Recordset") ; Create a recordset object
+
+Global $sFilename = "C:\Users\80364630\Desktop\TesteADO.xlsx"
+Global $sADOConnectionString = 'Provider=Microsoft.ACE.OLEDB.12.0;Data Source=' & $sFilename & ';Extended Properties="Excel 12.0xml;HDR=Yes";""'
+
+$oADOConnection.Open($sADOConnectionString) ; Open the connection
+
+Global $sADOSQL = "Select * FROM [DeParaBradesco$]" ; Select all records and all fields
+$oADORecordset.Open($sADOSQL, $oADOConnection, $iCursorType, $iLockType, $iOptions) ; Issue the SQL query
+
+With $oADORecordset
+    While Not .EOF ; repeat until End-Of-File (EOF) is reached
+        ; Write the content of all fields to the console separated by | by processing the fields collection
+        ConsoleWrite(.Fields(0).Value)
+        .MoveNext ; Move To the Next record
+    WEnd
+ EndWith
+
+$oADORecordset.Close ; Close the recordset
+$oADORecordset = 0 ; Release the recordset object
+$oADOConnection.Close ; Close the connection
+$oADOConnection = 0 ; Release the connection object
+

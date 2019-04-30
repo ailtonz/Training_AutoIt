@@ -1,0 +1,28 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+;Array Examples
+
+;Method 1
+Dim $names[6]
+$names[0] = "Alex"
+$names[1] = "Brett"
+$names[2] = "Nicholas"
+$names[3] = "Jos"
+$names[4] = "Michael"
+$names[5] = "George"
+MsgBox(0, "Array", $names[1])
+
+;Method 2
+Dim $names_new[6] = ["Alex", "Brett", "Nicholas", "Jos", "Michael", "George" ]
+for $x = 0 to 6
+	MsgBox(0, "Name", $names_new[$x])
+Next
+

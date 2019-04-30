@@ -1,0 +1,982 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+; CONEXÃO COM ATIS
+#include <IE.au3>
+#include <Excel.au3>
+#include <MsgBoxConstants.au3>
+#include <Array.au3>
+#include <GUIConstantsEx.au3> ; constante para GUI eventos
+#include <EditConstants.au3> ; constante para editar
+#include <File.au3>
+#include <Date.au3>
+#include <FileConstants.au3>
+
+
+;Liga a opção de eventos de controle
+Opt("GUIOnEventMode",1)
+
+;Poe no inicio do script <-----------------------
+;Quando pressionar a tecla 'Esc' sai da rotina
+HotKeySet("{Esc}", "CaptureEsc")
+
+If WinExists("pw3270") Then
+
+;Processo para busca dos registros PASC
+;========================================
+
+   ;Preenchimento tela Login e Senha
+   ;--------------------------------
+   WinActivate("pw3270")
+   Send("E650175",1)
+   Send("{TAB}")
+   Send("vivo0102",1)
+   Send("{ENTER}")
+   ;--------------------------------
+
+   ;Preenchimento tela 1 - acesso aos registros PASC
+   ;------------------------------------------------
+   Send("A0",1)
+   Send("{ENTER}")
+   ;------------------------------------------------
+
+   ;Preenchimento da transacao Pasc
+   ;------------------------------------------------
+   Send("{PAUSE}")
+   Sleep(1000)
+   Send("PASC",1)
+   Send("{ENTER}")
+   Sleep(1000)
+   ;------------------------------------------------
+
+   ;Paramentros da Transacao Pasc
+   ;------------------------------------------------
+   Send("CONS",1)
+   Send("{TAB}")
+   Send("08",1)
+   Send("{ENTER}")
+   Sleep(1000)
+   Send("07",1)
+   Send("x",1)
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("SFR",1)
+   Send("{TAB}")
+   Send("99",1)
+   Send("x",1)
+   Sleep(1000)
+   Send("{ENTER}")
+   ;------------------------------------------------
+
+   ;Copia da Tela com números de registros
+   ;--------------------------------------
+   Sleep(5000)
+   Send("{PAUSE}")
+   Sleep(500)
+   WinActivate("pw3270")
+   Send("{CTRLDOWN}a{CTRLUP}")
+   Send("{CTRLDOWN}c{CTRLUP}")
+   Sleep(1000)
+   ;--------------------------------------
+
+   ;Chamada Note Pad, colar tela e salvar
+   ;---------------------------------------------------------------------
+   ; Run Notepad
+   Run("notepad.exe")
+   Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+   WinActivate($hWnd)
+   Send("{CTRLDOWN}v{CTRLUP}")
+   Send("{CTRLDOWN}s{CTRLUP}")
+   Sleep(1000)
+   $sFilePath = _PathFull(@ScriptDir) & "\Arquivos\Pasc_ValidaRegistros.txt"
+   Send($sFilePath,1)
+   Sleep(1000)
+   ;Send("!s") ;Citrix
+   Send("!l")
+   Sleep(1000)
+   WinClose($hWnd)
+   WinActivate("pw3270")
+   Sleep(2000)
+   ;----------------------------------------------------------------------
+
+   ;Chamada do arquivo salvo para validação da quantidade de registros
+   ;----------------------------------------------------------------------
+   Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+   Local $sFileRead  = FileReadLine($hFileOpen, 8)
+   local $iRegistros = StringMid($sFileRead,19,2)
+   FileDelete($sFilePath)
+   ;----------------------------------------------------------------------
+
+   ;Acesso aos registros
+   ;----------------------
+   WinActivate("pw3270")
+   Send("x",1)
+   Send("{ENTER}")
+   Sleep(2000)
+   ;----------------------
+
+   ;Copia da tela inicial dos registros para validação da quantidade de paginas a serem acessadas
+   ;---------------------------------------------------------------------------------------------
+   Send("{PAUSE}")
+   Sleep(500)
+   WinActivate("pw3270")
+   Send("{CTRLDOWN}a{CTRLUP}")
+   Send("{CTRLDOWN}c{CTRLUP}")
+   Sleep(1000)
+   ;----------------------------------------------------------------------------------------------
+
+   ;Chamada Note Pad, colar tela e salvar
+   ;---------------------------------------------------------------------
+   ; Run Notepad
+   Run("notepad.exe")
+   Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+   WinActivate($hWnd)
+   Send("{CTRLDOWN}v{CTRLUP}")
+   Send("{CTRLDOWN}s{CTRLUP}")
+   Sleep(1000)
+   $sFilePath = _PathFull(@ScriptDir) & "\Arquivos\Pasc_ValidaRegistrosPag.txt"
+   Send($sFilePath,1)
+   Sleep(1000)
+   ;Send("!s") ;Citrix
+   Send("!l")
+   Sleep(1000)
+   WinClose($hWnd)
+   ;----------------------------------------------------------------------
+
+   ;Acesso ao registro salva para validação do número de páginas
+   ;----------------------------------------------------------------------
+   WinActivate("pw3270")
+   Sleep(2000)
+   Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+   Local $sFileRead  = FileReadLine($hFileOpen, 3)
+   local $iPaginas = StringMid($sFileRead,78,4)
+   FileDelete($sFilePath)
+   ;-----------------------------------------------------------------------
+
+   ;Chamada da Função que salva os registros
+   ;----------------------------------------------------
+   CopiaRegistros(Number($iPaginas),Number($iRegistros),"PASC")
+   ;----------------------------------------------------
+
+;Processo para busca dos registros POMB
+;========================================================================
+
+   ;Reinicia a tela de a chamada da nova transação (botão PA2)
+   ;----------------------------------------------
+   Send("{PAUSE}")
+   Sleep(1000)
+   ControlClick("pw3270", "", "gdkWindowChild24")
+   ;ControlClick("pw3270", "", "gdkWindowChild28") ;Citrix
+   Sleep(1000)
+   ;----------------------------------------------
+
+   ;Inicia transação POMB
+   ;---------------------
+   Send("POMB",1)
+   Send("{ENTER}")
+   ;---------------------
+
+   ;Parâmetros transação POMB
+   ;-------------------------
+   Send("cons",1)
+   Send("{TAB}")
+   Send("08",1)
+   Send("{ENTER}")
+   Send("07",1)
+   Send("x",1)
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("COBRAN",1)
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("99",1)
+   Send("x",1)
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("x",1)
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("01010001",1)
+   Send("{ENTER}")
+   ;------------------------
+
+   ;copia da tela onde possui a quantidade de registros
+   ;---------------------------------------------------
+   Sleep(5000)
+   Send("{PAUSE}")
+   Sleep(500)
+   WinActivate("pw3270")
+   Send("{CTRLDOWN}a{CTRLUP}")
+   Send("{CTRLDOWN}c{CTRLUP}")
+   Sleep(1000)
+   ;---------------------------------------------------
+
+   ;Chamada Note Pad, colar tela e salvar
+   ;--------------------------------------------------------------------
+   ; Run Notepad
+   Run("notepad.exe")
+   Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+   WinActivate($hWnd)
+   Send("{CTRLDOWN}v{CTRLUP}")
+   Send("{CTRLDOWN}s{CTRLUP}")
+   Sleep(1000)
+   $sFilePath = _PathFull(@ScriptDir) & "\Arquivos\Pomb_ValidaRegistros.txt"
+   Send($sFilePath,1)
+   Sleep(1000)
+   ;Send("!s") ;Citrix
+   Send("!l")
+   Sleep(1000)
+   WinClose($hWnd)
+   WinActivate("pw3270")
+   Sleep(2000)
+   ;--------------------------------------------------------------------
+
+   ;Validação do Número de registros
+   ;--------------------------------------------------------------------
+   Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+   Local $sFileRead  = FileReadLine($hFileOpen, 8)
+   local $iRegistros = StringMid($sFileRead,18,3)
+   FileDelete($sFilePath)
+   ;--------------------------------------------------------------------
+
+   ;Acesso aos registros
+   ;----------------------
+   WinActivate("pw3270")
+   Send("x",1)
+   Send("{ENTER}")
+   Sleep(2000)
+   ;----------------------
+
+   ;copia da tela onde possui a quantidade de páginas
+   ;---------------------------------------------------
+   Send("{PAUSE}")
+   Sleep(500)
+   WinActivate("pw3270")
+   Send("{CTRLDOWN}a{CTRLUP}")
+   Send("{CTRLDOWN}c{CTRLUP}")
+   Sleep(1000)
+   ;---------------------------------------------------
+
+   ;Chamada Note Pad, colar tela e salvar
+   ;---------------------------------------------------------------------
+   ; Run Notepad
+   Run("notepad.exe")
+   Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+   WinActivate($hWnd)
+   Send("{CTRLDOWN}v{CTRLUP}")
+   Send("{CTRLDOWN}s{CTRLUP}")
+   Sleep(1000)
+   $sFilePath = _PathFull(@ScriptDir) & "\Arquivos\Pomb_ValidaRegistrosPag.txt"
+   Send($sFilePath,1)
+   Sleep(1000)
+   ;Send("!s") ;Citrix
+   Send("!l")
+   Sleep(1000)
+   WinClose($hWnd)
+   WinActivate("pw3270")
+   Sleep(2000)
+   ;----------------------------------------------------------------------
+
+   ;Acesso ao registro salva para validação do número de páginas
+   ;----------------------------------------------------------------------
+   Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+   Local $sFileRead  = FileReadLine($hFileOpen, 3)
+   local $iPaginas = StringMid($sFileRead,78,4)
+   FileDelete($sFilePath)
+   ;----------------------------------------------------------------------
+
+   ;Chamada da função para salvar os registros POMB
+   ;----------------------------------------------------
+   CopiaRegistros(Number($iPaginas),Number($iRegistros),"POMB")
+   ;----------------------------------------------------
+
+   ;copia da tela onde possui a quantidade de registros
+   ;---------------------------------------------------
+   WinActivate("pw3270")
+   send("{F2}")
+   Sleep(1000)
+   Send("{PAUSE}")
+   Sleep(1000)
+   Send("{CTRLDOWN}a{CTRLUP}")
+   Send("{CTRLDOWN}c{CTRLUP}")
+   Sleep(1000)
+   ;---------------------------------------------------
+
+   ;Chamada Note Pad, colar tela e salvar
+   ;--------------------------------------------------------------------
+   ; Run Notepad
+   Run("notepad.exe")
+   Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+   WinActivate($hWnd)
+   Send("{CTRLDOWN}v{CTRLUP}")
+   Send("{CTRLDOWN}s{CTRLUP}")
+   Sleep(1000)
+   $sFilePath = _PathFull(@ScriptDir) & "\Arquivos\Pomb_Valida_Registros_Reitirado.txt"
+   Send($sFilePath,1)
+   Sleep(1000)
+   ;Send("!s") ;Citrix
+   Send("!l")
+   Sleep(1000)
+   WinClose($hWnd)
+   WinActivate("pw3270")
+   Sleep(2000)
+   ;--------------------------------------------------------------------
+
+   ;Validação do Número de registros
+   ;--------------------------------------------------------------------
+   Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+   Local $sFileRead  = FileReadLine($hFileOpen, 8)
+   Local $iRegistros = StringStripWS(StringMid($sFileRead,30,2),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+   FileDelete($sFilePath)
+   ;--------------------------------------------------------------------
+
+   if number($iRegistros) > 0 then
+	  Send("{PAUSE}")
+	  WinActivate("pw3270")
+	  Send("{TAB}")
+	  Send("x",1)
+	  Send("{ENTER}")
+	  Sleep(500)
+
+	  ;Copia Tela para Validação de números de páginas
+	  ;-----------------------------------------------
+	  Send("{PAUSE}")
+	  Sleep(500)
+	  WinActivate("pw3270")
+	  Send("{CTRLDOWN}a{CTRLUP}")
+	  Send("{CTRLDOWN}c{CTRLUP}")
+	  Sleep(1000)
+	  ;-----------------------------------------------
+
+	  ;Chamada Note Pad, colar tela e salvar
+	  ;---------------------------------------------------------------------
+	  ; Run Notepad
+	  Run("notepad.exe")
+	  Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+	  WinActivate($hWnd)
+	  Send("{CTRLDOWN}v{CTRLUP}")
+	  Send("{CTRLDOWN}s{CTRLUP}")
+	  Sleep(1000)
+	  $sFilePath = _PathFull(@ScriptDir) & "\Arquivos\Pomb_Valida_Paginas_Reitirado.txt"
+	  Send($sFilePath,1)
+	  Sleep(1000)
+	  ;Send("!s") ;Citrix
+	  Send("!l")
+	  Sleep(1000)
+	  WinClose($hWnd)
+	  WinActivate("pw3270")
+	  Sleep(2000)
+	  ;----------------------------------------------------------------------
+
+	  ;Acesso ao registro salva para validação do número de páginas
+	  ;----------------------------------------------------------------------
+	  Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+	  Local $sFileRead  = FileReadLine($hFileOpen, 3)
+	  local $iPaginas = StringMid($sFileRead,78,4)
+	  FileDelete($sFilePath)
+
+	  ;Chamada da função para salvar os registros POMB Reiterados
+	  ;----------------------------------------------------
+	  CopiaRegistros(Number($iPaginas),Number($iRegistros),"Reiterado_POMB")
+	  ;----------------------------------------------------
+   endif
+
+;Processo para busca dos registros PACC
+;========================================================================
+
+   ;Reinicia a tela de a chamada da nova transação (botão PA2)
+   ;----------------------------------------------
+   Send("{PAUSE}")
+   Sleep(1000)
+   ;ControlClick("pw3270", "", "gdkWindowChild28");Citrix
+   ControlClick("pw3270", "", "gdkWindowChild24")
+   Sleep(1000)
+   ;----------------------------------------------
+
+   ;Inicia transação PACC
+   ;---------------------
+   Send("PACC",1)
+   Send("{ENTER}")
+   ;---------------------
+
+   ;Acesso a primeira tela
+   ;---------------------
+   Send("04",1)
+   Send("{ENTER}")
+   ;---------------------
+
+   ;Parâmetros para acesso a tela de registros
+   ;------------------------------------------
+   Send("05",1)
+   Send("SFR",1)
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("99",1)
+   Send("{ENTER}")
+   Sleep(1000)
+   ;------------------------------------------
+
+   ;copia da tela onde possui a quantidade de registros
+   ;---------------------------------------------------
+   WinActivate("pw3270")
+   Send("{PAUSE}")
+   Sleep(1000)
+   Send("{CTRLDOWN}a{CTRLUP}")
+   Send("{CTRLDOWN}c{CTRLUP}")
+   Sleep(1000)
+   ;---------------------------------------------------
+
+   ;Chamada Note Pad, colar tela e salvar
+   ;--------------------------------------------------------------------
+   ; Run Notepad
+   Run("notepad.exe")
+   Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+   WinActivate($hWnd)
+   Send("{CTRLDOWN}v{CTRLUP}")
+   Send("{CTRLDOWN}s{CTRLUP}")
+   Sleep(1000)
+   $sFilePath = _PathFull(@ScriptDir) & "\Arquivos\PACC_Valida_Pagina.txt"
+   Send($sFilePath,1)
+   Sleep(1000)
+   ;Send("!s") ;Citrix
+   Send("!l")
+   Sleep(1000)
+   WinClose($hWnd)
+   WinActivate("pw3270")
+   Sleep(2000)
+   ;--------------------------------------------------------------------
+
+   ;Acesso ao registro salva para validação do número de páginas
+   ;----------------------------------------------------------------------
+   Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+   Local $sFileRead  = FileReadLine($hFileOpen, 24)
+   local $sValida = StringMid($sFileRead,5,6)
+
+
+   Local $sFileRead  = FileReadLine($hFileOpen, 3)
+   Local $iPaginas = StringMid($sFileRead,77,3)
+
+   $iNumReg = 1
+   for $iPag = 1 to $iPaginas
+
+	  ;copia da tela onde possui a quantidade de registros
+	  ;---------------------------------------------------
+	  WinActivate("pw3270")
+	  Send("{PAUSE}")
+	  Sleep(1000)
+	  Send("{CTRLDOWN}a{CTRLUP}")
+	  Send("{CTRLDOWN}c{CTRLUP}")
+	  Sleep(1000)
+	  ;---------------------------------------------------
+
+	  ;Chamada Note Pad, colar tela e salvar
+	  ;--------------------------------------------------------------------
+	  ; Run Notepad
+	  Run("notepad.exe")
+	  Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+	  WinActivate($hWnd)
+	  Send("{CTRLDOWN}v{CTRLUP}")
+	  Send("{CTRLDOWN}s{CTRLUP}")
+	  Sleep(1000)
+	  $sFilePath = _PathFull(@ScriptDir) & "\Arquivos\PACC_Valida_Registros_" & $iPag & ".txt"
+	  Send($sFilePath,1)
+	  Sleep(1000)
+	  ;Send("!s") ;Citrix
+	  Send("!l")
+	  Sleep(1000)
+	  WinClose($hWnd)
+	  WinActivate("pw3270")
+	  Sleep(2000)
+	  ;--------------------------------------------------------------------
+
+	  ;Valida o número de Registros
+	  ;---------------------------------------------------------------------
+	  $iReg = 0
+	  for $i = 10 to 21
+		 Local $sFileRead  = FileReadLine($hFileOpen, $i)
+		 if stringlen(StringStripWS($sFileRead,$STR_STRIPLEADING + $STR_STRIPTRAILING)) > 0 Then
+		   $iReg = $iReg + 1
+		 endif
+	  Next
+	  ;---------------------------------------------------------------------
+
+	  for $iRegistros = 1 to $iReg
+		 WinActivate("pw3270")
+		 Send("x",1)
+		 Send("{ENTER}")
+
+		 Send("{PAUSE}")
+		 Sleep(500)
+		 WinActivate("pw3270")
+		 Send("{CTRLDOWN}a{CTRLUP}")
+		 Send("{CTRLDOWN}c{CTRLUP}")
+		 Sleep(1000)
+
+		 ;Run Notepad
+		 Run("notepad.exe")
+		 Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+		 WinActivate($hWnd)
+
+		 Send("{CTRLDOWN}v{CTRLUP}")
+		 Send("{ENTER}")
+		 sleep(1000)
+		 Send("{CTRLDOWN}s{CTRLUP}")
+		 Sleep(1000)
+		 Local $sArquivo = _PathFull(@ScriptDir) & "\Arquivos\PACC_Registro_" & $iNumReg & ".txt"
+		 Send($sArquivo,1)
+		 ;Send("!s") ;Citrix
+		 Send("!l")
+		 Sleep(1000)
+		 WinClose($hWnd)
+		 Sleep(1000)
+
+		 WinActivate("pw3270")
+		 Send("{F2}")
+
+		 Sleep(1000)
+		 if $iRegistros < 12 then
+		   for $i = 1 To $iRegistros
+			  Sleep(500)
+			  Send("{Down}")
+		   next
+		 EndIf
+		 $iNumReg = $iNumReg + 1
+	  next
+	  send("{F8}")
+   next
+   FileDelete($sFilePath)
+
+
+;Processo para busca dos registros BC
+;========================================================================
+;ControlClick("pw3270", "", "gdkWindowChild28");Citrix
+
+ControlClick("pw3270", "", "gdkWindowChild24")
+Sleep(500)
+Send("{PAUSE}")
+Sleep(500)
+ControlClick("pw3270", "", "gdkWindowChild23")
+Sleep(500)
+Send("{PAUSE}")
+Sleep(500)
+Send("c0{ENTER}")
+Sleep(500)
+Send("{PAUSE}")
+Sleep(500)
+WinActivate("pw3270")
+Send("O010",1)
+Send("{ENTER}")
+Sleep(500)
+
+Send("4O",1)
+
+Send("{TAB}")
+Send("11000",1)
+Send("6501753",1)
+Send("BCP1F",1)
+Send("{TAB}")
+
+local $varES[3]
+$varES[0] = "VM"
+$varES[1] = "CO"
+$varES[2] = "CA"
+
+$iNumReg = 1
+for $iBC = 0 to Ubound($varES)-1
+
+   Send($varES[$iBC],1)
+   Send("{ENTER}")
+
+   ;Send("{PAUSE}")
+   Sleep(1000)
+   WinActivate("pw3270")
+   Send("{CTRLDOWN}a{CTRLUP}")
+   Send("{CTRLDOWN}c{CTRLUP}")
+   Sleep(1000)
+
+   ;Run Notepad
+   Run("notepad.exe")
+   Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+   WinActivate($hWnd)
+   Send("{CTRLDOWN}v{CTRLUP}")
+   sleep(1000)
+   Send("{CTRLDOWN}s{CTRLUP}")
+   Sleep(1000)
+   Local $sArquivo = _PathFull(@ScriptDir) & "\Arquivos\BC_" & $varES[$iBC] & "Valida_Pag.txt"
+   Send($sArquivo,1)
+   ;Send("!s") ;Citrix
+   Send("!l")
+   Sleep(1000)
+   WinClose($hWnd)
+   Sleep(1000)
+
+   ;Acesso ao registro salva para validação do número de páginas
+   ;----------------------------------------------------------------------
+   Local $hFileOpen  = FileOpen($sArquivo, $FO_READ)
+   Local $sFileRead  = FileReadLine($hFileOpen, 1)
+   local $iPag = StringMid($sFileRead,77,3)
+
+   for $iPaginas = 1 to $iPag
+
+	  ;Send("{PAUSE}")
+	  ;Sleep(500)
+	  WinActivate("pw3270")
+	  Send("{CTRLDOWN}a{CTRLUP}")
+	  Send("{CTRLDOWN}c{CTRLUP}")
+	  Sleep(1000)
+
+	  ;Run Notepad
+	  Run("notepad.exe")
+	  Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+	  WinActivate($hWnd)
+	  Send("{CTRLDOWN}v{CTRLUP}")
+	  sleep(1000)
+	  Send("{CTRLDOWN}s{CTRLUP}")
+	  Sleep(1000)
+	  Local $sArquivo = _PathFull(@ScriptDir) & "\Arquivos\BC_" & $varES[$iBC] & $iPag & "Valida_Reg.txt"
+	  Send($sArquivo,1)
+	  ;Send("!s") ;Citrix
+	  Send("!l")
+	  Sleep(1000)
+	  WinClose($hWnd)
+	  Sleep(1000)
+
+	  $iCountTab = 1
+	  for $i = 4 to 22
+		 Local $sFileRead  = FileReadLine($hFileOpen, $i)
+		 if stringlen(StringStripWS($sFileRead,$STR_STRIPLEADING + $STR_STRIPTRAILING)) > 0 Then
+		   if StringMid($sFileRead,58,5) = "VIDEO" then
+			   WinActivate("pw3270")
+			   Send("x",1)
+			   Sleep(500)
+			   Send("{F1}")
+
+			   Send("{CTRLDOWN}a{CTRLUP}")
+			   Send("{CTRLDOWN}c{CTRLUP}")
+			   Sleep(1000)
+
+			   ;Run Notepad
+			   Run("notepad.exe")
+			   Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+			   WinActivate($hWnd)
+			   Send("{CTRLDOWN}v{CTRLUP}")
+			   sleep(1000)
+			   Send("{CTRLDOWN}s{CTRLUP}")
+			   Sleep(1000)
+			   Local $sArquivo = _PathFull(@ScriptDir) & "\Arquivos\BC_Registro_" & $iNumReg & ".txt"
+			   Send($sArquivo,1)
+			   ;Send("!s") ;Citrix
+			   Send("!l")
+			   Sleep(1000)
+			   WinClose($hWnd)
+			   Sleep(1000)
+
+			   Send("{F4}")
+			   Sleep(500)
+			   for $iTab = 1 to $iCountTab
+				  Send("{TAB}")
+			   next
+			   $iNumReg = $iNumReg + 1
+			Else
+			   Send("{DOWN}")
+			endif
+			$iCountTab = $iCountTab + 1
+		endif
+;~ 		WinActivate("pw3270")
+;~ 		Send("{ENTER}")
+	 Next
+	 Send("{ENTER}")
+   next
+   Send("{PAUSE}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+next
+
+
+   ;Consolidar()
+
+   MsgBox(0,"","Finalizado com Sucesso!")
+Else
+   exit
+EndIf
+
+func CopiaRegistros($iPag,$iReg,$sProcesso)
+
+$iContReg = $iReg
+$iNumReg = 1
+;for $iPaginas = 1 to $iPag
+for $iPaginas = 1 to 1
+
+   if $iPaginas > 1 then
+	  Send("{F8}")
+   EndIf
+
+   if $iContReg >=12 Then
+	  $iReg = 12
+	  WinActivate("pw3270")
+   Else
+	  $iReg = $iContReg
+   endif
+
+   ;for $iIndex = 1 to $iReg
+   for $iIndex = 1 to 1
+	  WinActivate("pw3270")
+	  Sleep(2000)
+	  Send("x",1)
+	  Send("{ENTER}")
+	  Sleep(500)
+	  WinActivate("pw3270")
+	  Send("{PAUSE}")
+	  Sleep(500)
+	  WinActivate("pw3270")
+	  Send("{CTRLDOWN}a{CTRLUP}")
+	  Send("{CTRLDOWN}c{CTRLUP}")
+	  Sleep(1000)
+
+	  ;Run Notepad
+	  Run("notepad.exe")
+	  Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+	  WinActivate($hWnd)
+
+	  Send("{CTRLDOWN}v{CTRLUP}")
+	  Send("{ENTER}")
+	  Sleep(1000)
+
+;~ 	  WinActivate("pw3270")
+;~ 	  Send("{PAUSE}")
+;~ 	  Send("{F9}")
+
+;~ 	  Sleep(1000)
+;~ 	  WinActivate("pw3270")
+
+;~ 	  Sleep(500)
+;~ 	  WinActivate("pw3270")
+;~ 	  Send("{CTRLDOWN}a{CTRLUP}")
+;~ 	  Send("{CTRLDOWN}c{CTRLUP}")
+;~ 	  Sleep(1000)
+
+;~ 	  WinActivate($hWnd)
+;~ 	  Send("{CTRLDOWN}v{CTRLUP}")
+;~ 	  Send("{ENTER}")
+	  Send("{CTRLDOWN}s{CTRLUP}")
+	  Sleep(1000)
+	  Local $sArquivo = _PathFull(@ScriptDir) & "\Arquivos\" & $sProcesso & "_Registro_" & $iNumReg & ".txt"
+	  Send($sArquivo,1)
+	  Sleep(1000)
+	  Send("{ENTER}")
+	  WinClose($hWnd)
+	  Sleep(1000)
+
+;~ 	  Local $hFileOpen = FileOpen($sArquivo, $FO_READ)
+;~ 	  Local $sFileRead = FileReadLine($hFileOpen, 48)
+;~ 	  local $sValida   = StringMid($sFileRead,2,3)
+
+;~ 	  if $sValida = "NAO" then
+;~ 		 WinActivate("pw3270")
+;~ 		 Send("{F2}")
+;~ 	  Else
+
+;~ 		 Local $hFileOpen = FileOpen($sArquivo, $FO_READ)
+;~ 		 Local $sFileRead = FileReadLine($hFileOpen, 26)
+;~ 		 local $iValReg	  = StringMid($sFileRead,79,2)
+
+;~ 		 if Number($iValReg) > 1 then
+
+;~ 			for $iPagina = 2 to Number($iValReg)
+;~ 			  WinActivate("pw3270")
+;~ 			  Send("{F8}")
+;~ 			  Sleep(500)
+;~ 			  Send("{PAUSE}")
+;~ 			  Sleep(500)
+;~ 			  WinActivate("pw3270")
+;~ 			  Send("{CTRLDOWN}a{CTRLUP}")
+;~ 			  Send("{CTRLDOWN}c{CTRLUP}")
+;~ 			  WinActivate($hWnd)
+;~ 			  Sleep(500)
+
+;~ 			  Send("{CTRLDOWN}v{CTRLUP}")
+;~ 			  Sleep(1000)
+;~ 			  Send("{ENTER}")
+;~ 			  Send("{CTRLDOWN}s{CTRLUP}")
+
+;~ 			  Sleep(1000)
+;~ 			  WinActivate("pw3270")
+;~ 			  Sleep(1000)
+;~ 			next
+;~ 			WinClose($hWnd)
+
+;~ 			for $iPagina = 2 to Number($iValReg)
+;~ 			  Sleep(1000)
+;~ 			  Send("{F7}")
+;~ 			next
+
+;~ 			WinActivate("pw3270")
+;~ 			Send("{F2}")
+;~ 			Sleep(500)
+;~ 			Send("{F2}")
+;~ 		 Else
+;~ 			WinActivate("pw3270")
+;~ 			Send("{F2}")
+;~ 			Send("{F2}")
+;~ 			Sleep(500)
+;~ 		 endif
+;~ 	  EndIf
+
+	  WinActivate("pw3270")
+	  Send("{F2}")
+	  Sleep(1000)
+
+	  if $iIndex < 12 then
+		 for $i = 1 To $iIndex
+			Sleep(500)
+			Send("{Down}")
+		 next
+	  EndIf
+
+;~ 	  Sleep(1000)
+;~ 	  WinClose($hWnd)
+	  $iNumReg = $iNumReg + 1
+   next
+   $iContReg = $iContReg - 12
+next
+
+EndFunc
+
+
+
+Func Consolidar()
+
+   ;Algoritimo para busca DexPara
+   Global $oExcel = ObjCreate("Excel.Application")
+   Local $sPath = _PathFull(@ScriptDir) & "\DeParaAtis.xlsx"
+   $oExcel.WorkBooks.Open ($sPath)
+   $oExcel.visible = true
+   local $sht = $oExcel.WorkBooks($oExcel.WorkBooks.Count).Worksheets("Consolidado")
+   local $rng = $sht.Range("A2")
+
+   Local $aListArquivos = returnFindFiles("Arquivos","*Registro*.txt")
+   For $iArq = 1 to Number($aListArquivos[0])
+	  Local $sEndArquivo = _PathFull(@ScriptDir) & "\Arquivos\" & $aListArquivos[$iArq]
+	  Local $hFileOpen = FileOpen($sEndArquivo, $FO_READ)
+	  local $line = FileReadLine($hFileOpen,3)
+	  $rng.value =  StringStripWS(StringMid($line,13,13),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+
+	  if StringLeft($aListArquivos[$iArq],4) = "PASC" Then
+		 $rng.offset(0,1).value = "PASC"
+		 $rng.offset(0,3).value = "PROCESSOS ESPECIAIS"
+		 $rng.offset(0,16).value = "Não"
+		 $rng.offset(0,4).value = StringMid($line,44,10) & " 00:00:00"
+
+		 ;Nome do Cliente
+		 local $line = FileReadLine($hFileOpen,12)
+		 $rng.offset(0,6).value = StringMid($line,36,45)
+
+		 ;Terminal de Contato
+		 local $line = FileReadLine($hFileOpen,6)
+		 $rng.offset(0,9).value = StringMid($line,12,12)
+
+		 ;Terminal Reclamado
+		 local $line = FileReadLine($hFileOpen,12)
+		 $rng.offset(0,8).value = StringMid($line,12,12)
+
+	  ElseIf StringLeft($aListArquivos[$iArq],4) = "POMB" Then
+		 $rng.offset(0,1).value = "POMB"
+		 $rng.offset(0,3).value = "OUVIDORIA"
+		 $rng.offset(0,16).value = "Não"
+
+		 ;Nome Cliente
+		 local $line = FileReadLine($hFileOpen,12)
+		 $rng.offset(0,6).value = StringMid($line,34,41)
+
+		 ;Data Original
+		 local $line = FileReadLine($hFileOpen,3)
+		 $rng.offset(0,4).value = StringMid($line,45,10) & " 00:00:00"
+
+		 ;Terminal de Contato
+		 local $line = FileReadLine($hFileOpen,6)
+		 $rng.offset(0,9).value = StringMid($line,11,12)
+
+		 ;Terminal Reclamado
+		 local $line = FileReadLine($hFileOpen,12)
+		 $rng.offset(0,8).value = StringMid($line,11,12)
+
+	  elseif StringLeft($aListArquivos[$iArq],14) = "Reiterado_POMB" Then
+		 $rng.offset(0,1).value = "POMB"
+		 $rng.offset(0,3).value = "OUVIDORIA"
+		 $rng.offset(0,16).value = "Sim"
+
+		 ;Nome Cliente
+		 local $line = FileReadLine($hFileOpen,12)
+		 $rng.offset(0,6).value = StringMid($line,34,41)
+
+		 ;Data Original
+		 local $line = FileReadLine($hFileOpen,3)
+		 $rng.offset(0,4).value = StringMid($line,45,10) & " 00:00:00"
+
+		 ;Terminal de Contato
+		 local $line = FileReadLine($hFileOpen,6)
+		 $rng.offset(0,9).value = StringMid($line,11,12)
+
+		 ;Terminal Reclamado
+		 local $line = FileReadLine($hFileOpen,12)
+		 $rng.offset(0,8).value = StringMid($line,11,12)
+	  EndIf
+
+	  $rng.offset(0,17).value = "Não"
+
+	  $sReclamacao = ""
+	  For $i = 7 to 11
+		 local $line = FileReadLine($hFileOpen,$i)
+		 ;$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,11,StringLen($line)-10),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 $sReclamacao = $sReclamacao & StringStripWS(StringMid($line,11,70),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+	  Next
+
+	  For $i = 17 to 22
+		 local $line = FileReadLine($hFileOpen,$i)
+		 ;$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,2,StringLen($line)-1),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 $sReclamacao = $sReclamacao & StringStripWS(StringMid($line,11,70),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+	  Next
+	  ;FileDelete($sEndArquivo)
+	  FileClose($sEndArquivo)
+	  $rng.offset(0,2).value = $sReclamacao
+	  $rng = $rng.offset(1,0)
+   Next
+
+EndFunc
+Func returnFindFiles($sFolder,$sFind)
+    ; List all the files and folders in the desktop directory using the default parameters and return the full path.
+	Local $sPath = _PathFull(@ScriptDir ) & "\" & $sFolder
+
+    Local $aFileList = _FileListToArray($sPath,$sFind, $FLTA_FILES)
+
+	Return $aFileList
+
+EndFunc   ;==>returnFindFiles
+
+Func CaptureEsc()
+    Switch @HotKeyPressed ; The last hotkey pressed.
+        Case "{ESC}" ; String is the {ESC} hotkey.
+	  Exit
+    EndSwitch
+ EndFunc
+

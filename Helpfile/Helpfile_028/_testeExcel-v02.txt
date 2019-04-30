@@ -1,0 +1,39 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <File.au3>
+#Include <Excel.au3>
+#include <MsgBoxConstants.au3>
+#include <GUIConstantsEx.au3> ; constante para GUI eventos
+;~ #include <WindowsConstants.au3>
+
+Local $sPath = _PathFull(@ScriptDir) & "\testeExcel.xlsm"
+Global $oExcel = ObjCreate("Excel.Application")
+$oExcel.WorkBooks.Open ($sPath,"",False)
+$oExcel.visible = true
+
+If Not FileExists($sPath) Then ; Just a check to be sure..
+	MsgBox($MB_SYSTEMMODAL, "Excel Data Test", "Error: Can't find file " & $sFileName)
+	Exit
+ EndIf
+
+
+
+local $sht = $oExcel.WorkBooks($oExcel.WorkBooks.Count).Worksheets("Dados")
+Local $UltLinha = $oExcel.WorksheetFunction.CountA($sht.Range("A:A")) + 1
+
+
+MsgBox(0,"Processo SGQD","Dados Gerados Com Sucesso! " & $UltLinha)
+
+
+;Fecha o arquivo aberto e elimina a instancia aberta
+$oExcel.WorkBooks($oExcel.WorkBooks.Count).Close (False)
+$oExcel.quit
+

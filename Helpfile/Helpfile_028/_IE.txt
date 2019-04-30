@@ -1,0 +1,22 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <IE.au3>
+
+;CONEXÃO COM BENNER
+Global $oIEBenner = _IECreate()
+_IENavigate($oIEBenner, "http://10.20.179.79/juridico/login.aspx")
+_IELoadWait($oIEBenner)
+
+;Ativar os controles da tela para preenchimento de usuário e senha
+$o_FormLogin = _IEFormGetObjByName($oIEBenner, "FormLogin")
+$o_txt_user = _IEFormElementGetObjByName($o_FormLogin, "pu")
+$o_txt_pwd = _IEFormElementGetObjByName($o_FormLogin, "pp")
+

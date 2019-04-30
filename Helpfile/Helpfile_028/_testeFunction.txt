@@ -1,0 +1,25 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+$result = x (5, 4)
+For $i = 0 To UBound($result) -1
+    Msgbox (0,"", $result[$i])
+Next
+
+Func x ($y, $z)
+    Local $array[2], $New_y, $New_z
+    $New_y = $y * 2
+    $New_z = $z * 2
+
+    $array[0] = $New_y
+    $array[1] = $New_z
+    Return $array
+EndFunc
+

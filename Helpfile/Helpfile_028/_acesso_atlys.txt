@@ -1,0 +1,223 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+;include necessarios
+#include <GUIConstantsEx.au3> ; constante para GUI eventos
+#include <EditConstants.au3> ; constante para editar
+#include <MsgBoxConstants.au3>
+#include <WindowsConstants.au3>
+#include <File.au3>
+
+Opt("GUIOnEventMode",1)
+
+Global $hSalvaInputUser
+Global $hSalvaInputPass
+
+; titulo da janela para inserir user e password
+Local $hGUI = GUICreate("Acesso ao Atlys", 320, 100)
+GUISetOnEvent($GUI_EVENT_CLOSE, "CLOSEButton")
+
+; pede o usuario que vai acessar o atlys - labels
+$hLabelUser = GUICtrlCreateLabel("Digite o usuário do Atlys:", 10, 10, 380, 40)
+$hLabelPass = GUICtrlCreateLabel("Digite a senha do Atlys:", 175, 10, 380, 40)
+
+; pede o usuario que vai acessar o atlys - textbox
+$hInputUser = GUICtrlCreateInput("", 10, 25, 120, 20)
+$hInputPass = GUICtrlCreateInput("", 175, 25, 120, 20, "35")
+
+; botao ok
+$hButton = GUICtrlCreateButton("OK", 10, 60, 100, 25)
+GUICtrlSetOnEvent($hButton, "OKButton")
+
+; mostra o GUI
+GUISetState(@SW_SHOW)
+
+; while loop para deixar a janela aberta
+While 1
+	Sleep(10); comando para nao usar muito a CPU
+WEnd
+
+Func OKButton() ; funcao do botao ok para salvar a entrada de dados
+	Local $hSalvaInputUser = WinWait("[ACTIVE]", "", 10)
+	Local $hSalvaInputPass = WinWait("[ACTIVE]", "", 10)
+	Local $sSalvaInputUser = ControlGetText($hSalvaInputUser, "", "Edit1")
+	Local $sSalvaInputPass = ControlGetText($hSalvaInputPass, "", "Edit2")
+
+	WinActivate("Logon do Atlys Global Solution")
+
+	; verifica se a janela existe
+	If WinExists("Logon do Atlys Global Solution") Then
+
+		Local $hWnd = WinWait("Logon do Atlys Global Solution", "", 10)
+
+		; preenche os campos usuario e senha e clica no botao ok
+		ControlSend($hWnd, "", "Edit1", $sSalvaInputUser)
+		ControlSend($hWnd, "", "Edit2", $sSalvaInputPass, 1)
+		ControlClick($hWnd, "", "Button3")
+
+	EndIf
+
+   FecharJanelas()
+
+EndFunc
+
+Func FecharJanelas() ; funcao para fechar as janelas
+
+   Sleep(10000)
+
+   ;espera a janela do fechar
+   WinActivate("Logon do Atlys Global Solution")
+
+   ; clica no botao fechar da janela de transicao atlys
+   If WinExists("Logon do Atlys Global Solution") Then
+
+	  Local $hWnd = WinWaitActive("Logon do Atlys Global Solution", "", 0)
+	  ControlClick($hWnd, "", "Button1")
+
+   EndIf
+
+   WinActivate("[CLASS:OI_Window]")
+
+   ; clica no botao ok da tela de ultimo logon
+   If WinExists("[CLASS:OI_Window]") Then
+
+	  Local $hWnd = WinWaitActive("[CLASS:OI_Window]", "", 0)
+	  Send("{ENTER}")
+
+   EndIf
+
+	ContinuaDados()
+
+EndFunc
+
+Func CLOSEButton() ; funcao para fechar a janela de usuario e senha
+
+	Exit
+
+EndFunc
+
+Func ContinuaDados() ; funcao para iniciar a automacao apos login
+
+   ; ativar a janela que inseri o cpnj
+   WinActivate("[CLASS:OI_Window]")
+
+   WinSetState("[CLASS:OI_Window]", "", @SW_MAXIMIZE)
+
+   ; mover o mouse para o combo e clicar no combo
+   MouseMove(224, 143)
+   MouseClick("left")
+   Sleep(2000)
+
+   ; selecionar a opcao identificacao do cliente
+   MouseMove(154, 164)
+   MouseClick("left")
+   Sleep(2000)
+
+   ; selecionar o campo id do cliente e colar o cnpj
+   MouseMove(350, 159)
+   MouseClick("left")
+   Send("09381706000115")
+   Sleep(2000)
+
+   ; clicar no botao pesquisar
+   MouseMove(65, 273)
+   MouseClick("left")
+   Sleep(2000)
+
+   ; clicar 2x na linha com resultado da pesquisa
+   MouseMove(555, 352)
+   MouseClick("left")
+   MouseClick("left")
+   Sleep(2000)
+
+   ; ativar a janela notas de notas de conta
+   WinActivate("[CLASS:OI_Window]")
+
+; clica no botao fechar da janela notas de contas
+If WinExists("[CLASS:OI_Window]") Then
+
+   MouseMove(726, 502)
+   MouseClick("left")
+   Sleep(2000)
+
+EndIf
+
+   ; clica no botao visualizar/alterar cliente
+   WinActivate("[CLASS:OI_Window]")
+   MouseMove(104, 635)
+   MouseClick("left")
+   Sleep(2000)
+
+   ; clica no botao funcoes do cliente
+   MouseMove(346, 376)
+   MouseClick("left")
+   Sleep(2000)
+
+   ; seleciona a opcao avaliar credito
+   Send("{DOWN 13}")
+   Send("{ENTER}")
+   Sleep(2000)
+
+   ; clicar no botao continuar da tela historico do cliente
+   WinActivate("Histórico de Crédito")
+   MouseMove(99, 522)
+   MouseClick("left")
+   Sleep(2000)
+
+If WinExists("[CLASS:OI_Window]") Then
+
+   WinActivate("[CLASS:OI_Window]")
+
+   ; mover o mouse para o checkbox suspensao de credito
+   MouseMove(314, 239)
+   MouseClick("left")
+   Sleep(2000)
+
+   ; fechar janela Avaliar Credito
+   MouseMove(403, 446)
+   MouseClick("left")
+   Sleep(2000)
+
+   ; fechar janela Visualizar / Alterar Credito
+   MouseMove(340, 423)
+   MouseClick("left")
+   Sleep(2000)
+
+   ; fechar janela Visualizar / Alterar Conta
+   MouseMove(710, 680)
+   MouseClick("left")
+   Sleep(2000)
+
+   ; fechar janela Pesquisa de cliente/conta
+   MouseMove(349, 539)
+   MouseClick("left")
+   Sleep(2000)
+
+EndIf
+
+   GeraLog()
+
+EndFunc
+
+Func GeraLog() ; funcao que gera o arquivo de log
+
+; monta o nome do arquivo com a data
+Local $DiaSuspensao = @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "_" & "Suspensao_Avaliacao_Credito.log"
+
+; salva o arquivo com o nome e data
+_FileWriteLog($DiaSuspensao, "Log test")
+
+; fecha o arquivo
+FileClose($DiaSuspensao)
+
+Exit
+
+EndFunc
+

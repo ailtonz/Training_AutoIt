@@ -1,0 +1,198 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <File.au3>
+#include <Date.au3>
+#include <MsgBoxConstants.au3>
+#include <Constants.au3>
+#include <StringConstants.au3>
+#include <Array.au3>
+#include <Excel.au3>
+
+;Quando pressionar a tecla 'Esc' sai da rotina
+HotKeySet("{Esc}", "CaptureEsc")
+
+#Region Variáveis de customização
+;========================================================================================================
+Global $iAutomatioName = "IMP_NOTA_SAIDA"
+Global $iSheetName = "IMPNOTA_SAIDA.xlsx"
+Global $iTransaction = "ZDSD51"
+Global $SleepTime = 100
+Global $iMsgTitle = "Automação - " & $iAutomatioName
+;========================================================================================================
+#EndRegion
+
+#Region Variáveis do LOG
+;========================================================================================================
+Global $s_Directory = @ScriptDir
+;Global $s_Directory = "\\10.128.222.36\Arrecadacao\PDTI"
+Local $sData = _NowDate()
+Local $xData = StringSplit($sData,"/")
+Local $data = $xData[3] & $xData[2] & $xData[1]
+Global $hFile = FileOpen($s_Directory & "\" & $iAutomatioName & "_" & $data & ".log", 1)
+;========================================================================================================
+#EndRegion
+
+#Region Variáveis de manipulação do arquivo
+;========================================================================================================
+Global $s_Filename = $s_Directory & "\" & $iSheetName
+Global $iExcelObj = ObjGet($s_Filename)	; Instancia o objeto com a planilha de origem
+Valida_Arq_Excel()
+Global $iRowCount = $iExcelObj.ActiveSheet.UsedRange.Rows.Count
+Global $iColumnCount = $iExcelObj.ActiveSheet.UsedRange.Columns.Count
+Global $iRange = "A2:" & _Excel_ColumnToLetter($iColumnCount) & $iRowCount
+Global $oDocument = $iExcelObj.Worksheets(1)
+Global $iArrayValues = $oDocument.range($iRange).value
+;========================================================================================================
+#EndRegion
+
+Global $begin = TimerInit() ; Captura início da execução do Robo
+
+_FileWriteLog($hFile, "-----------------------------------------------------------------------------------------")
+_FileWriteLog($hFile, "--- Início da automação - " & $iAutomatioName & " ---")
+
+ConfirmaInicio()
+Valida_SAP()
+ProcessaPlanilha()
+
+_FileWriteLog($hFile, "--- Fim da automação - " & $iAutomatioName & " ---")
+MsgBox($MB_SYSTEMMODAL, "", "Fim da automação - " & $iAutomatioName & " " & CHR(13) & "Tempo de Execução: " & Round((TimerDiff($begin)/1000), 2))
+
+FileClose($hFile)
+_Exit()
+
+Func Valida_Arq_Excel() ;Função para validar existencia do arquivo Excel no diretório correto
+
+   Local $iFileExists = FileExists($s_Filename)
+
+   If Not $iFileExists Then
+	  _FileWriteLog($hFile, "[ERRO] Valida_Arq_Excel() - Arquivo "& $s_Filename &" não encontrado.")
+	  MsgBox($MB_ICONERROR, $iMsgTitle, "Arquivo " & $s_Filename & " não encontrado.")
+	  _Exit()
+   EndIf
+
+   _FileWriteLog($hFile, "Valida_Arq_Excel() - Arquivo "& $s_Filename &" encontrado.")
+
+EndFunc
+
+Func Valida_SAP() ; Função para validar se SAP está ativo na tela correta
+
+   ;Verifica se janela existe
+   If WinExists("[REGEXPTITLE:SAP Easy Access.+]") Then
+
+	  ;Faz ativação da janela
+	  WinActivate("[REGEXPTITLE:SAP Easy Access.+]")
+
+	  ;Aguarda ativação da janela por 10 segundos
+	  $nSapAtv = WinWaitActive("[REGEXPTITLE:SAP Easy Access.+]", "",10)
+
+	  if $nSapAtv <> 0 Then
+		 ;Maximiza e Ativa Tela Inicial
+		 WinSetState("[REGEXPTITLE:SAP Easy Access.+]", "", @SW_MAXIMIZE)
+		 WinActivate("[REGEXPTITLE:SAP Easy Access.+]")
+
+		 _FileWriteLog($hFile, "Valida_SAP() - Acessando transação " & $iTransaction & ".")
+
+		 ;Entra na transação
+		 ControlSend("[REGEXPTITLE:SAP Easy Access.+]","","Edit1",$iTransaction & "{ENTER}")
+		 Sleep(1000)
+
+	  Else
+		 ;Timeout
+		 _FileWriteLog($hFile, "[ERRO] Valida_SAP() - Timeout na ativação da tela SAP Easy Access.")
+		 MsgBox($MB_ICONERROR, $iMsgTitle, "O tempo de ativação da tela 'SAP Easy Access' expirou. Favor tentar novamente.")
+		 _Exit()
+	  EndIf
+   Elseif (WinExists("SAP Logon 730") = 1) And (WinExists("[REGEXPTITLE:SAP Easy Access.+]") = 0) Then
+		 ;SAP não está na janela correta
+		 _FileWriteLog($hFile, "[ERRO] Valida_SAP() - SAP não está na tela inicial 'SAP Easy Access'.")
+		 MsgBox($MB_ICONERROR, $iMsgTitle, "Favor manter o SAP na tela inicial 'SAP Easy Access' antes de inciar o robô.")
+		 _Exit()
+   Else
+		 ;SAP não está ativo
+		 _FileWriteLog($hFile, "[ERRO] Valida_SAP() - SAP Inativo.")
+		 MsgBox($MB_ICONERROR, $iMsgTitle, "Favor fazer o login no SAP antes de inciar o robô.")
+		 _Exit()
+   EndIf
+
+EndFunc
+
+Func ProcessaPlanilha() ;Função varrer a planilha e executar as ações no SAP
+
+   If $iRowCount = 0 or $iRowCount = Null Then
+	  _FileWriteLog($hFile, "[ERRO] ProcessaPlanilha() - Arquivo " & $s_Filename & " sem conteúdo ou arquivo já está aberto.")
+	  MsgBox($MB_ICONERROR, $iMsgTitle, "Erro na abertura do arquivo " & $s_Filename & ". Arquivo sem conteúdo ou arquivo já está aberto.")
+	  _Exit()
+   Else
+	  _FileWriteLog($hFile, "ProcessaPlanilha() - Quantidade de linhas do arquivo Excel: " & $iRowCount)
+   EndIf
+
+   If IsArray($iArrayValues) and Ubound($iArrayValues,0)>0 then ;Valida se veio valor para o Array
+
+	  for $x=0 to ubound($iArrayValues,2)-1
+
+		 SendWait($iArrayValues[0][$x],$SleepTime) ;------- Fatura
+		 SendWait("{ENTER}",3000)
+		 SendWait("{DONW}",2500,2)
+		 SendWait($iArrayValues[1][$x],$SleepTime) ;------- Data
+		 SendWait("{ENTER}",2000)
+		 SendWait("{DONW}",2500,3)
+		 SendWait($iArrayValues[2][$x],$SleepTime) ;------- Empresa
+		 SendWait("{ENTER}",2000)
+		 SendWait($iArrayValues[3][$x],$SleepTime) ;------- CentroCusto
+		 SendWait("{ENTER}",2000)
+		 SendWait("{F8}",1000)
+		 SendWait("{ENTER}",2000)	 
+		 SendWait("{F3}",1000)
+	  Next
+   Else
+	  _FileWriteLog($hFile, "Erro: Nenhum valor foi carregdo do range " & $iRange)
+	  Msgbox ($MB_ICONERROR, $iMsgTitle, "Erro: Nenhum valor foi carregdo do range " & $iRange)
+	  _Exit()
+   EndIf
+EndFunc
+
+Func SendWait($text,$sleep,$repeat=1,$format="%s",$flag=0)
+   for $j = 1 to $repeat
+	  Send(StringFormat($format,$text),$flag)
+	  Sleep($sleep/$repeat)
+   Next
+EndFunc
+
+Func ConfirmaInicio()
+   Local $iAnswer = MsgBox(BitOR($MB_YESNO, $MB_SYSTEMMODAL), $iMsgTitle, "Esse script irá processar os dados da planilha " & $s_Filename & ".  Deseja continuar?")
+   If $iAnswer = 7 Then 	; Verifica se o usuário abortou a operação
+	  _FileWriteLog($hFile, "--- Processo abortado pelo usuário ---")
+	  MsgBox(0, $iMsgTitle, "Processo abortado pelo usuário")
+	  _Exit()
+   EndIf
+EndFunc
+
+Func CaptureEsc()
+   Switch @HotKeyPressed ; The last hotkey pressed.
+	  Case "{ESC}" ; String is the {ESC} hotkey.
+		 Local $iAnswer = MsgBox(BitOR($MB_YESNO, $MB_SYSTEMMODAL), $iMsgTitle, "Deseja interromper a execução da automação?")
+		 If $iAnswer = 6 Then 	; Verifica se o usuário abortou a operação
+			_FileWriteLog($hFile, "--- Processo abortado pelo usuário ---")
+			MsgBox(0, $iMsgTitle, "Processo abortado pelo usuário")
+			_Exit()
+		 EndIf
+   EndSwitch
+EndFunc
+
+Func _Exit()
+   ;$iExcelObj.Open
+   ;$iExcelObj.Windows(1).Visible = True
+   ;$iExcelObj.save
+   $iExcelObj.close
+   $iExcelObj = Null
+   Exit
+EndFunc
+

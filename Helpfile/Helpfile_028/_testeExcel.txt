@@ -1,0 +1,71 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <File.au3>
+#Include <Excel.au3>
+#include <GuiListView.au3>
+#include <MsgBoxConstants.au3>
+#include <GUIConstantsEx.au3> ; constante para GUI eventos
+#include <WindowsConstants.au3>
+
+;Liga a opção de eventos de controle
+Opt("GUIOnEventMode",1)
+;Poe no inicio do script <-----------------------
+;Quando pressionar a tecla 'Esc' sai da rotina
+HotKeySet("{Esc}", "CaptureEsc")
+
+;Cria ListWiew com nomes das planilhas carregadas
+Global $idListXls = GUICtrlCreateListView("Nome do Arquivo", 5, 5, 200, 150,$LVS_EX_GRIDLINES)
+
+;Cria ListWiew com nomes das planilhas do arquivo selecionado
+Global $idListSht = GUICtrlCreateListView("Nome da Planilha", 215, 5, 200, 150,$LVS_EX_GRIDLINES)
+
+Call carregaNomeSht("testeExcel.xlsm")
+
+func carregaNomeSht($strNomeArq)
+
+;Valida qual arquivo selecionado na lista de Arquivos
+local $iItem = _GUICtrlListView_GetSelectedIndices($idListXls)
+Global $strNomeArq = _GUICtrlListView_GetItemText($idListXls,Number($iItem))
+
+;Cria uma aplicação Excel e abre o arquivo selecionado
+Local $sPath = _PathFull(@ScriptDir) & "\" & $strNomeArq
+Global $oExcel = ObjCreate("Excel.Application")
+$oExcel.WorkBooks.Open ($sPath)
+$oExcel.visible = true
+
+
+;~ ;Limpa a lista de planilhas
+;~ _GUICtrlListView_DeleteAllItems($idListSht)
+
+;Percorre por todas as planilhas do arquivo e adiciona na lista de planilhas
+Local $shtName
+For $shtName In $oExcel.worksheets
+	  if $shtName.Name = "Dados" then
+		 Local $sFont = "Comic Sans MS"
+		 GUISetFont(7, 900, 1, $sFont)
+		 GUICtrlCreateListViewItem($shtName.Name,$idListSht)
+
+		 MsgBox($MB_ICONWARNING, "Inserção de Parcelamento","Achou")
+	  endif
+Next
+
+;Fecha o arquivo aberto e elimina a instancia aberta
+$oExcel.WorkBooks($oExcel.WorkBooks.Count).Close (False)
+$oExcel.quit
+EndFunc
+
+Func CaptureEsc()
+    Switch @HotKeyPressed ; The last hotkey pressed.
+	Case "{ESC}" ; String is the {ESC} hotkey.
+	  Exit
+    EndSwitch
+EndFunc
+

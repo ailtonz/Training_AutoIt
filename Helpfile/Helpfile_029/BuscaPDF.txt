@@ -1,0 +1,298 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <IE.au3>
+#include <Excel.au3>
+#include <MsgBoxConstants.au3>
+#include <ComboConstants.au3>
+#include <FileConstants.au3>
+#include <GUIConstantsEx.au3> ; constante para GUI eventos
+#include <File.au3>
+#include <InetConstants.au3>
+#include <ZIP.au3> ; Biblioteca Adicionada Manualmente na Pasta Include
+#include <GuiComboBoxEx.au3>
+#include <Date.au3>
+
+
+;Liga a opção de eventos de controle
+Opt("GUIOnEventMode",1)
+
+;Poe no inicio do script <-----------------------
+;Quando pressionar a tecla 'Esc' sai da rotina
+HotKeySet("{Esc}", "CaptureEsc")
+
+;Cria formulário e ativa a a função CloseButton evento fechar do formulário
+Global $hGUI = GUICreate("Acesso NF Sistema Externo", 270, 230)
+GUISetOnEvent($GUI_EVENT_CLOSE, "CLOSEButton")
+
+; pede o usuario que vai acessar o atis - labels
+GUICtrlCreateLabel("Usuário Sistema NF", 10, 10, 250, 40)
+GUICtrlCreateLabel("Senha Sistema NF", 140, 10, 380, 40)
+GUICtrlCreateLabel("Endereço de Email", 10, 65, 380, 40)
+
+global $hInputUser = GUICtrlCreateInput("", 10, 25 ,120, 25)
+global $hInputPass = GUICtrlCreateInput("", 140, 25, 120, 25, "35")
+;Global $idComboBox = GUICtrlCreateCombo("", 10, 80, 250, 100,$CBS_DROPDOWN)
+Global $idComboBox = _GUICtrlComboBoxEx_Create($hGUI,"",10, 80, 250, 100,$CBS_SIMPLE )
+
+$hButton = GUICtrlCreateButton("OK", 10, 200, 90, 25)
+GUICtrlSetOnEvent($hButton, "OKButton")
+
+$oExcel = ObjCreate("Excel.Application")
+Local $wbk = $oExcel.Workbooks.open(_PathFull(@ScriptDir) & "\shtApoio.xlsx")
+Local $sht = $wbk.Worksheets("Lista_Emails")
+
+For $rng In $sht.Range("rngEmail")
+  _GUICtrlComboBoxEx_AddString  ($idComboBox, $rng.Value)
+Next
+
+$wbk.close (false)
+$oExcel.Quit
+
+;Exibe Formulário
+GUISetState(@SW_SHOW, $hGUI)
+
+While 1
+   Sleep(10); comando para nao usar muito a CPU
+
+   Switch GUIGetMsg()
+	  Case $GUI_EVENT_CLOSE, $idClose
+		 ExitLoop
+   EndSwitch
+WEnd
+
+; Delete the previous GUI and all controls.
+GUIDelete($hGUI)
+
+Func CaptureEsc()
+   Switch @HotKeyPressed ; The last hotkey pressed.
+      Case "{ESC}" ; String is the {ESC} hotkey.
+	  if MsgBox($MB_YESNO,"Execução Interrompida Pelo Usuário","Deseja Terminar o Processamento do Robô?") = 6 Then
+		 MsgBox(0,"Execução Interrompida Pelo Usuário","Processamento Finalizado!")
+	  Exit
+	EndIf
+   EndSwitch
+EndFunc
+
+Func CLOSEButton() ; funcao para fechar a janela de usuario e senha
+   Exit
+EndFunc
+
+Func OKButton() ; funcao para fechar a janela de usuario e senha
+
+   ;Lê o usuário e senha do sistema digitado pelo usuário
+   Global $sSalvaInputUser = ControlGetText($hGUI, "", "Edit1")
+   Global $sSalvaInputPass = ControlGetText($hGUI, "", "Edit2")
+   Global $sAddress		   = ControlGetText($hGUI, "", "ComboBox1")
+   MsgBox(0,"",$sAddress)
+   if Stringlen($sSalvaInputUser) > 0 AND Stringlen($sSalvaInputPass) > 0 Then
+	  Sleep(1000)
+	  ProcessoNF($sSalvaInputUser,$sSalvaInputPass,$sAddress)
+   endif
+
+   MsgBox(0,"Processo Busca NF","NF Extraídas Com Sucesso!")
+   Exit
+EndFunc
+
+Func ProcessoNF($sUsuario,$sSenha,$sEmail)
+
+   ;Faz a chamada do site do sistema
+   Local $oIE = _IECreate("http://64.212.173.164:8080/BPO/")
+   _IELoadWait($oIE)
+
+   ;Estancia dos objetos de login da página
+   Local $oForm = _IEFormGetObjByName($oIE, "frmLogin")
+   Local $oText = _IEFormElementGetObjByName($oForm, "txtLoginUsuario")
+   Local $oSenha = _IEFormElementGetObjByName($oForm, "txtSenhaUsuario")
+   Local $oButton = _IEFormElementGetObjByName($oForm, "btlLogin")
+
+   ;Seta os valores digitados pelo usuário
+   _IEFormElementSetValue($oText, $sUsuario)
+   _IEFormElementSetValue($oSenha, $sSenha)
+   _IEAction($oButton, "click")
+   _IELoadWait($oIE)
+
+   $Hwnd = _IEPropertyGet($oIE, "hwnd")
+   WinSetState($Hwnd, "", @SW_MAXIMIZE)
+
+   ;Busca planilha de Apoio para Colar os nomes dos PDF's e assim identificar os terminais e seus links para download
+   $oExcel = ObjCreate("Excel.Application")
+   $oExcel.visible = True
+   Local $wbk = $oExcel.Workbooks.open(_PathFull(@ScriptDir) & "\shtApoio.xlsx")
+   Local $sht = $wbk.Worksheets("Dados")
+   Local $rng = $sht.Range("A1")
+
+   ;Copia as informaçoes do site e cola na planilha dados da planilha modelo
+   WinActivate($Hwnd)
+   Sleep(500)
+   Send("{CTRLDOWN}a{CTRLUP}")
+   Sleep(1000)
+   Send("{CTRLDOWN}c{CTRLUP}")
+   Sleep(3000)
+   $rng.PasteSpecial
+   Sleep(2000)
+
+   ;Abre a planilha indicada pelo usuário, onde irá conter os registros que deverão ser buscados no sistema em forma de PDF
+   Local $sFileOpenDialog = FileOpenDialog("Escolha o Arquivo Desejado", _PathFull(@ScriptDir), "Excel (*.xlsx)", $FD_FILEMUSTEXIST + $FD_MULTISELECT)
+   Local $wbk2 = $oExcel.Workbooks.open($sFileOpenDialog)
+   Local $sht2 = $wbk2.Worksheets(1)
+
+   ;Identifica o final da planilha
+   Local $nLin = qtdLinExcel($sht2,"A")
+   Local $qtdBusca = $oExcel.WorksheetFunction.CountIf($sht2.Range("N:N"),"NOTA FISCAL EMITIDA")
+   Local $iTol = 1
+   ;Faz a varredura na planilha para realizar as validacoes de busca
+   for $rngSol in $sht2.Range("A3:A"& $nLin)
+
+   ; Se o refgistros estiver indicando que é Normal e que a solicitaçao de NF já foi realizada, será feita a busca dentro do sistema
+   if StringLower($rngSol.offset(0,4).value) = "normal" AND StringRight($rngSol.offset(0,13).value,7) = "EMITIDA" Then
+
+	  ToolTip("NF : " & $iTol & " : " & $qtdBusca, 50, 100,"EXTRAINDO NF",1,1)
+	  $iTol = $iTol + 1
+
+	  ;Faz a chamada da funçao que faz a varredura nos links da planilha Modelo (Dados)
+	  Local $sLink = retornaLink($sht,StringLeft($rngSol.offset(0,6).value,9))
+
+	  ;Se for identificado que o terminal existe, será feita a solicitaçao do download
+	  if $sLink <> "0" Then
+
+		 ;Faz a validaçao se o Diretório com o numero do ID já existe, caso não exista, será criado
+		 If DirGetSize( _PathFull(@ScriptDir) & "\PDFs\ID" & $rngSol.value) = -1 Then
+			DirCreate(_PathFull(@ScriptDir) & "\PDFs\ID" & $rngSol.value)
+			Sleep(1000)
+		 EndIf
+
+		 local $sArquivo = _PathFull(@ScriptDir) & "\PDFs\ID" & $rngSol.value & "\ID" & $rngSol.value & "_" & $rngSol.offset(0,5).value & "_" & $rngSol.offset(0,6).value & "_" & StringLeft($rngSol.offset(0,7).value,8) & ".PDF"
+		 ;Faz a validaçao se o registro já foi salvo anteriomente para evitar o erro de salvar arquivo com o mesmo nome no mesmo diretório
+		 if FileExists ($sArquivo) = 0 Then
+
+			;Chama outra estancia do IE para realizar a solicitaçao de download da NF
+			Local $oIE2 = _IECreate()
+			_IENavigate($oIE2,$sLink)
+			_IELoadWait($oIE2)
+
+			$iTent = 0
+			local $bValida = False
+
+			;Passos para click do Botão Save As
+			while $bValida = False
+			   $iTent = $iTent +1
+			   WinActivate($oIE2)
+			   Sleep(1000)
+			   Send("{F6}")
+			   Sleep(1500)
+			   Send("{TAB}")
+			   Sleep(1000)
+			   if $iTent > 1 Then Send("{TAB}")
+			   Sleep(1000)
+			   Send("{DOWN}")
+			   Sleep(1000)
+			   Send("a")
+			   Sleep(1000)
+
+			   if WinExists("Save As") Then
+				  WinActivate("Save As")
+				  ControlFocus("Save As","","[CLASS:Edit;INSTANCE:1]")
+				  Send($sArquivo)
+				  sleep(1500)
+				  ControlClick("Save As","","[TEXT:&Save]")
+				  Sleep(1500)
+				  _IEQuit($oIE2)
+				  $bValida = True
+			   EndIf
+			WEnd
+
+			;Valida se a nota foi salva no diretório esperado para realizar o retorno na planilha
+			if FileExists($sArquivo) = 1 Then
+			   $rngSol.offset(0,15).value = "Nota Fiscal Extraida"
+			Else
+			   $rngSol.offset(0,15).value = "Erro na Extração"
+			EndIf
+		 Else
+			$rngSol.offset(0,15).value = "Nota Fiscal Já Existente"
+		 EndIf
+	  Else
+		 $rngSol.offset(0,15).value = "Nf Nao Encontrada"
+	  EndIf
+   EndIf
+Next
+
+;Fecha a planilha Modelo sem salvar,salva e fecha a planilha com os terminais das NF's e encerra a instancia do IE
+$wbk.close (false)
+$wbk2.Save
+$wbk2.Close	(false)
+$oExcel.Quit
+_IEQuit($oIE)
+
+ToolTip("Compactando NF's", 50, 100,"Criando ZIP",1,1)
+
+;Faz a busca das pastas criadas com as NF para a realizaçao da compactaçao (ZIP)
+Local $aPastas = ProcuraArquivo(_PathFull(@ScriptDir) & "\PDFs",2)
+For $iPasta = 1 To $aPastas[0]
+   ;Cria a pasta ZIP
+   local $sZip = _PathFull(@ScriptDir) & "\PDFs\" & $aPastas[$iPasta] & ".ZIP"
+   _Zip_Create($sZip)
+
+   Local $aFile = ProcuraArquivo(_PathFull(@ScriptDir) & "\PDFs\" & $aPastas[$iPasta],1)
+   for $iFile = 1 to $aFile[0]
+	  ;Adiciona arquivo um a um dentro do Zip já criado
+	  _Zip_AddItem($sZip,_PathFull(@ScriptDir) & "\PDFs\" & $aPastas[$iPasta] & "\"& $aFile[$iFile])
+   Next
+Next
+
+ToolTip("Enviando E-Mail", 50, 100,"Enviando E-Mail",1,1)
+
+;Faz a criaçao de email do outlook e faz o disparo para o e-mail determinado com os Zip's criados
+Local $oOutlook = ObjCreate("Outlook.Application")
+Local $iEmail = $oOutlook.CreateItem(0)
+
+$iEmail.Subject = "2 Via de NF - Processamento " & _Now()
+$iEmail.Body = "Segue em anexo NFs extraídas de sistema externo"
+$iEmail.To = $sEmail
+
+;Busca os Zip e anexa dentro do e-mail
+Local $aZips = ProcuraArquivoZip(_PathFull(@ScriptDir) & "\PDFs")
+For $iZips = 1 To $aZips[0]
+   Local $sZip = _PathFull(@ScriptDir) & "\PDFs\" & $aZips[$iZips]
+   $iEmail.ATTACHMENTS.Add ($sZip)
+   ;Deleta os zip's
+   FileDelete($sZip)
+Next
+
+;Comando de Envio
+$iEmail.Send
+
+EndFunc
+
+Func ProcuraArquivo($sPath,$iTipo)
+   Local $aArrayProcura = _FileListToArray($sPath,"*",$iTipo)
+   Return $aArrayProcura
+EndFunc
+Func ProcuraArquivoZip($sPath)
+   Local $aArrayProcura = _FileListToArray($sPath,"*.Zip")
+   Return $aArrayProcura
+EndFunc
+
+Func retornaLink($shtLink,$sFind)
+   For $hLink IN $shtLink.Hyperlinks
+	  if Stringleft(StringReplace(Trim($hLink.TextToDisplay)," -",""),9) = $sFind Then
+		 Return $hLink.Name
+	  EndIf
+   Next
+   Return 0
+EndFunc
+
+Func Trim($strString)
+   Return StringStripWS($strString,$STR_STRIPLEADING + $STR_STRIPTRAILING + $STR_STRIPSPACES)
+EndFunc
+Func qtdLinExcel($sht,$strCol)
+   Return ($sht.Range($strCol & 65536).End(-4162).Row)
+EndFunc
+

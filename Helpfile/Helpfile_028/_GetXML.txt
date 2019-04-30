@@ -1,0 +1,45 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+; Simple Way Of Parsing XML Data.
+
+#include <Array.au3>
+
+Global $aName, $sXMLData
+
+Global $s_Directory = @ScriptDir
+
+$sXMLData = _GetFile($s_Directory & "\" & "cfg.xml")
+
+;~ $sXMLData = "<userName>e623364</userName><userPsw>j88410@o</userPsw>"
+$aName = _GetXML($sXMLData, "userName")
+_ArrayDisplay($aName, "_GetXML()")
+MsgBox(0,"",$aName[1])
+
+Func _GetXML($sString, $sData)
+    Local $aError[2] = [1, $sString], $aReturn
+    $aReturn = StringRegExp('<' & $sData & '></' & $sData & '>' & $sString, '(?s)(?i)<' & $sData & '>(.*?)</' & $sData & '>', 3)
+    If @error Then
+        Return SetError(1, 0, $aError)
+    EndIf
+    $aReturn[0] = UBound($aReturn, 1) - 1
+    Return SetError(0, 0, $aReturn)
+ EndFunc   ;==>_GetXML
+
+ Func _GetFile($sFile, $iFormat = 0)
+    Local $hFileOpen = FileOpen($sFile, $iFormat)
+    If $hFileOpen = -1 Then
+        Return SetError(1, 0, "")
+    EndIf
+    Local $sData = FileRead($hFileOpen)
+    FileClose($hFileOpen)
+    Return $sData
+ EndFunc   ;==>_GetFile
+

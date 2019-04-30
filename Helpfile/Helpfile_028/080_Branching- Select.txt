@@ -1,0 +1,27 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+; Branching Example using Select...EndSelect Statement
+
+$var = 11
+
+Select
+	Case $var > 1 And $var <= 10
+		MsgBox(0, "Example", "$var was > than 1. Value = " & $var)
+	Case $var > 10 And $var <= 20
+		MsgBox(0, "Example", "$var was > than 10. Value = " & $var)
+	Case $var > 20 And $var <= 30
+		MsgBox(0, "Example", "$var was > than 20. Value = " & $var)
+	Case $var > 30 And $var <= 40
+		MsgBox(0, "Example", "$var was > than 30. Value = " & $var)
+	Case $var > 40
+		MsgBox(0, "Example", "$var was > than 40. Value = " & $var)
+EndSelect
+

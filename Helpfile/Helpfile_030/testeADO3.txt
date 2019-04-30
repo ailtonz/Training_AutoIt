@@ -1,0 +1,37 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <Array.au3>
+
+Const $adOpenStatic = 3
+Const $adLockOptimistic = 3
+Const $adCmdText = 0x0001
+
+Global $s_Filename="C:\Users\80364630\Desktop\TesteADO.xlsx"
+Global $s_Tablename = "[DeParaBradesco$]"
+Global $test [40][7]
+$objConnection = ObjCreate("ADODB.Connection")
+$objRecordSet = ObjCreate("ADODB.Recordset")
+$objConnection.Open ("Provider=Microsoft.Ace.OLEDB.12.0;" & _
+                "Data Source="&$s_Filename&";" & _
+                "Extended Properties=""Excel 12.0;HDR=Yes;"";")
+$objRecordSet.Open ("Select * FROM"& $s_Tablename , $objConnection, $adOpenStatic, $adLockOptimistic, $adCmdText)
+$i=0
+Do
+    $test [$i][0]=$objRecordSet.Fields(1).value
+    $test [$i][1]=$objRecordSet.Fields(2).value
+    $test [$i][2]=$objRecordSet.Fields(3).value
+    $test [$i][3]=$objRecordSet.Fields(4).value
+    $test [$i][4]=$objRecordSet.Fields(5).value
+    $i=$i+1
+    $objRecordSet.MoveNext()
+Until $objRecordSet.EOF()
+_ArrayDisplay($test)
+

@@ -1,0 +1,48 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include-once
+#include <Excel.au3>
+
+Func ReadSheet($excel, $sheet)
+	Return String2DSplit(ExcelSheetToClip($excel, $sheet))
+EndFunc   ;==>ReadSheet
+
+Func String2DSplit($string, $rowDelimiter = @CRLF, $columnDelimiter = "	")
+	$lines = StringSplit(StringStripWS($string, 3), $rowDelimiter, 1)
+	$columnsNum = _StringCount($lines[1], $columnDelimiter) + 1
+	Dim $result[$lines[0]][$columnsNum] = [[0]]
+	For $i = 1 To $lines[0]
+		$columns = StringSplit($lines[$i], $columnDelimiter)
+		For $j = 1 To $columns[0]
+			$result[$i - 1][$j - 1] = $columns[$j]
+		Next
+	Next
+	Return $result
+EndFunc   ;==>String2DSplit
+
+Func _StringCount($string, $substring)
+	Local $i, $count = 0
+	For $i = 1 To StringLen($string)
+		If StringMid($string, $i, StringLen($substring)) = $substring Then $count = $count + 1
+	Next
+	Return $count
+EndFunc   ;==>_StringCount
+
+Func ExcelSheetToClip($excel, $sheet)
+	_ExcelSheetActivate($excel, $sheet)
+	ClipPut("")
+	Send("^{HOME}^a^c")
+	Do
+		Sleep(100)
+	Until ClipGet()
+	Return ClipGet()
+EndFunc   ;==>ExcelSheetToClip
+

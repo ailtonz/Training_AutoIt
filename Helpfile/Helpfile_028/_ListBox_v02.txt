@@ -1,0 +1,126 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+; AutoIt 3.0.103 example
+; 17 Jan 2005 - CyberSlug
+; This script shows manual positioning of all controls;
+;   there are much better methods of positioning...
+
+#AutoIt3Wrapper_Run_Debug_Mode=n
+
+#include <GuiConstantsEx.au3>
+#include <AVIConstants.au3>
+#include <TreeViewConstants.au3>
+#include <GUIListBox.au3>
+#include <Constants.au3>
+#include <ListBoxConstants.au3>
+#include <WindowsConstants.au3>
+
+; Set Variants
+Global $FPS, $file, $output, $hGUI, $sItems, $aItems, $testthis
+
+; Create GUI
+$hGUI = GUICreate("FLV Processing", 350, 400)
+GUISetIcon(@SystemDir & "\mspaint.exe", 0)
+
+
+; MENU
+GUICtrlCreateMenu("Menu&One")
+GUICtrlCreateMenu("Menu&Two")
+
+; CONTEXT MENU
+$contextMenu = GUICtrlCreateContextMenu()
+GUICtrlCreateMenuItem("Context Menu", $contextMenu)
+GUICtrlCreateMenuItem("", $contextMenu);separator
+GUICtrlCreateMenuItem("&Properties", $contextMenu)
+
+; PROGRESS
+GUICtrlCreateProgress(10, 275, 150, 20)
+GUICtrlSetData(-1, 10)
+GUICtrlCreateLabel("Progress:", 10, 250)
+
+; Create LISTBOX
+$hListBox = _GUICtrlListBox_Create($hGUI, "String upon creation", 10, 30, 300, 90, BitOR($LBS_SORT, $WS_HSCROLL, $WS_VSCROLL, $WS_BORDER, $LBS_HASSTRINGS, $LBS_MULTIPLESEL));BitOR($LBS_SORT, $WS_HSCROLL, $WS_VSCROLL, $WS_BORDER, $LBS_ExtendedSEL, $LBS_HASSTRINGS, $LBS_MULTIPLESEL))
+;_GUICtrlListBox_Create($hWnd, $sText, $iX, $iY[, $iWidth = 100[, $iHeight = 200[, $iStyle = 0x00B00002[, $iExStyle = 0x00000200]]]])
+;$hListBox=GuiCtrlCreateList("", 10, 30, 300, 90)
+; Add files
+_GUICtrlListBox_BeginUpdate($hListBox)
+_GUICtrlListBox_ResetContent($hListBox)
+_GUICtrlListBox_InitStorage($hListBox, 100, 4096)
+_GUICtrlListBox_Dir($hListBox, "C:\h264\*.*")
+_GUICtrlListBox_EndUpdate($hListBox)
+MsgBox(0, "", "HListBox COntains " & $hListBox & ".")
+MsgBox(0, "", "There are " & _GUICtrlListBox_GetCount($hListBox) & " items in this list.")
+$aItems = _GUICtrlListBox_GetSelItemsText($hListBox)
+MsgBox(0, "Information", "Items Selected: " & $aItems[0])
+;For $iI = 1 To $aItems[0]
+;   $sItems &= @LF & $aItems[$iI]
+;MsgBox(1, "Information", "Items Selected: " & $sItems)
+;Next
+
+GUICtrlCreateLabel("File List To Process", 10, 10)
+
+; GROUP WITH RADIO BUTTONS
+GUICtrlCreateGroup("Frames Per Second for files to be processed", 10, 120, 225, 100)
+$hRadio1 = GUICtrlCreateRadio("23.976", 15, 140, 80)
+GUICtrlSetState(-1, $GUI_CHECKED)
+$FPS = 23.976
+$hRadio2 = GUICtrlCreateRadio("29.97", 15, 165, 80)
+$hRadio3 = GUICtrlCreateRadio("30", 15, 190, 80)
+GUICtrlCreateGroup("", -99, -99, 1, 1);close group
+_GUICtrlListBox_AddString($hListBox,"one")
+_GUICtrlListBox_AddString($hListBox,"two")
+_GUICtrlListBox_AddString($hListBox,"three")
+; BUTTON
+$hButton = GUICtrlCreateButton("GO!", 10, 330, 100, 30)
+
+; GUI MESSAGE LOOP
+GUISetState()
+While 1
+    $guimsg = GUIGetMsg()
+   ;MsgBox(4160, "Information", "Gui Selected: " & $guimsg)
+   switch $guimsg
+        Case $hButton;$guimsg; =
+            _ProcessVideos($file, $FPS, $output)
+
+            $testthis = _GUICtrlListBox_GetSelItems($hListBox)
+            MsgBox(0, "", "You Chose " & $testthis[0] & " items.")
+            $sItems = ''
+            For $iI = 1 To $testthis[0]
+                $sItems &= @CR & $testthis[$iI] & ', ' & _GUICtrlListBox_GetText($hListBox,$testthis[$iI])
+            Next
+            MsgBox(4160, "Information", "Item Numbers Selected: " & $sItems)
+        Case $hRadio1
+            $FPS = 23.976
+            MsgBox(0, "", "You Chose " & $FPS & ".")
+        Case $hRadio2
+            $FPS = 29.97
+            MsgBox(0, "", "You Chose " & $FPS & ".")
+        Case $hRadio3
+            $FPS = 30.00
+            MsgBox(0, "", "You Chose " & $FPS & ".")
+        Case $GUI_EVENT_CLOSE
+            Exit
+    EndSwitch
+WEnd
+
+Func _ProcessVideos($a, $b, $c)
+   ;MsgBox(0,"",'C:\h264\ffmpeg.exe -i "' & $a & '" -vcodec copy -acodec copy "temp.mp4"')
+    RunWait('C:\h264\ffmpeg.exe -i "' & $a & '" -vcodec copy -acodec copy "temp.mp4"', "C:\h264", @SW_HIDE)
+    RunWait('C:\h264\mp4box.exe -raw 1 "temp.mp4"', "C:\h264", @SW_HIDE)
+    RunWait('C:\h264\mp4box.exe -raw 2 "temp.mp4"', "C:\h264", @SW_HIDE)
+    RunWait('C:\h264\mp4box.exe -add "temp_track1.h264:fps=' & $b & '" -add "temp_track2.aac" ' & $c & '.mp4', "C:\h264", @SW_HIDE)
+    FileDelete('C:\h264\temp.mp4')
+    FileDelete('C:\h264\temp_track1.h264')
+    FileDelete('C:\h264\temp_track2.aac')
+    MsgBox(0, "", "You have completed processing Videos.")
+    Return
+EndFunc  ;==>_ProcessVideos
+

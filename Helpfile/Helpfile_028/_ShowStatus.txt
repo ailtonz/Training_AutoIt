@@ -1,0 +1,49 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+
+HotKeySet("{Esc}", "CaptureEsc")
+
+
+for $i = 0 to 20
+ShowStatus("Processando... (" & $i & " de 20)","PROCESSO [1]")
+Sleep(300)
+Next
+
+HideStatus()
+;~ Sleep(2000)
+
+;~ for $i = 0 to 20
+;~ ShowStatus(@CRLF & "Processando... (" & $i & " de 20) " & @CRLF & @CRLF,"PROCESSO [2]")
+;~ Sleep(300)
+;~ Next
+
+
+
+Func ShowStatus($Texto, $Titulo = "")
+ToolTip($Texto,(@DesktopWidth - 200),(@DesktopHeight - 600),$Titulo,1,4)
+EndFunc
+
+Func HideStatus()
+ToolTip("")
+EndFunc
+
+Func CaptureEsc()
+Switch @HotKeyPressed ; The last hotkey pressed.
+Case "{ESC}" ; String is the {ESC} hotkey.
+Exit
+EndSwitch
+EndFunc
+
+
+Func ShowStatus2($Texto, $Titulo = "")
+ToolTip("-------------------------------------" & @CR & @CR & @CR & $Texto & @CR & @CR & @CR & "-------------------------------------",(@DesktopWidth),(@DesktopHeight - 165),$Titulo,1,4)
+EndFunc
+

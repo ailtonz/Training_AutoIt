@@ -1,0 +1,44 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <GUIConstantsEx.au3>
+
+Func WinMain()
+   ;Create main window that is parent
+
+   $hMainWnd = GUICreate("Test")
+   GUISetOnEvent($GUI_EVENT_CLOSE, "OnClose")
+
+   ;Create button that is a child of main window
+   $ctrlId = GUICtrlCreateButton("Click me", 0,0,100,40)
+   GUICtrlSetOnEvent($ctrlId, "OnClickMe")
+
+   ;Show the app
+   GUISetState(@SW_SHOW)
+
+   ;Message loop
+
+   while(1)
+	  $msg = GUIGetMsg(1)
+	  Select
+	  case $msg[0] = $ctrlId
+		 MsgBox(0,"I'm a button", "I been clicked!")
+	  case $msg[0] = $GUI_EVENT_CLOSE
+
+		 if ($msg[1] = $hMainWnd) Then
+			MsgBox(0,"Time to exit", "Closing down the app")
+			ExitLoop
+		 endif
+	  EndSelect
+	  sleep(50)
+	  WEnd
+	  EndFunc
+	  WinMain()
+

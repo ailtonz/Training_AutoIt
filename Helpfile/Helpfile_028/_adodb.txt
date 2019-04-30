@@ -1,0 +1,47 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+Local	$dbname = @ScriptDir & "\" & "Baixa Datéis.mdb"
+Local	$tblname = "01_Dateis"
+;~ Local	$query = "SELECT * FROM " & $tblname ;& " WHERE DtMovto = #10/02/2006#"
+Local	$query = "SELECT * FROM " & $tblname & " WHERE DtMovto = #10/02/2006#"
+
+Local	$title
+Const $adCmdText = 0x0001
+
+LOCAL $adoCon = ObjCreate("ADODB.Connection")
+;~ LOCAL $adoRs = ObjCreate("ADODB.Recordset")
+LOCAL $adoCm = ObjCreate("ADODB.Command")
+
+;$adoCon.Open("Driver={Microsoft Access Driver (*.mdb)}; DBQ=" & $dbname) ;Use this line if using MS Access 2003 and lower
+$adoCon.Open ("Provider=Microsoft.Jet.OLEDB.4.0; Data Source=" & $dbname) ;Use this line if using MS Access 2007 and using the .accdb file extension
+LOCAL $adoCm
+
+$adoRs = ObjCreate ("ADODB.Recordset")
+$adoRs.CursorType = 1
+$adoRs.LockType = 3
+$adoRs.Open ($query, $adoCon)
+
+;~ $adoCm.ActiveConnection = $adoCon.Execute()
+;~ $adoCm.CommandType = $adCmdText
+;~ $adoCm.CommandText ("Insert into " & $tblname & " (cliente) values ('**** cliente ****') ")
+;~ $adoRs = $adoCm.Execute
+
+$adoCon.Execute("Insert into " & $tblname & " (cliente) values ('**** cliente ****') ")
+
+
+;~ $title = $adoRs.Fields("cliente").value    ;Retrieve value by field name
+
+;$title = $adoRs.Fields(2).value         ;Retrieve value by column number
+
+$adoCon.Close
+
+MsgBox(0,"testing",$title)
+

@@ -1,0 +1,48 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+ #include <GUIConstantsEx.au3>
+ #include <ListviewConstants.au3>
+
+ Opt("GUIOnEventMode", 1)
+
+MainGUI()
+
+ ; ----- GUIs
+Func MainGUI()
+  Global $listview
+  $listGUI = GUICreate("AutoIt GUICtrlCreateListView Example", 400, 200, 100, 200, -1)
+  GUISetOnEvent($GUI_EVENT_CLOSE, "OnClose")
+  $listview = GUICtrlCreateListView("Username|Password", 10, 10, 200, 150, $LVS_NOSORTHEADER+$LVS_SINGLESEL,$LVS_EX_GRIDLINES)
+
+  GUICtrlCreateListViewItem("John|1234", $listview)
+  GUICtrlCreateListViewItem("AutoItUser|153_4", $listview)
+  GUICtrlCreateListViewItem("BlueBoden|782dF", $listview)
+
+  $BtnSelect = GUICtrlCreateButton("Select", 100, 165, 80, 30)
+  GUICtrlSetOnEvent(-1, "SelectItem")
+
+  GUISetState()
+
+  While 1
+    Sleep(10)
+  WEnd
+EndFunc
+ ; ///// Functions
+Func SelectItem()
+  $sItem = GUICtrlRead(GUICtrlRead($listview))
+  $sItem = StringTrimRight($sItem, 1) ; Will remove the pipe "|" from the end of the string
+  MsgBox(0, "Selected Item", $sItem)
+EndFunc
+
+Func OnClose()
+   Exit
+EndFunc
+

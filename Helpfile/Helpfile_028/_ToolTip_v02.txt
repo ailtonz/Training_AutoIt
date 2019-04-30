@@ -1,0 +1,17 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+Local $r = 2
+Local $numRegistros = 30
+Local $iAutomatioName = "FT01"
+
+ToolTip ( "Registro: " & $r & " - " & $numRegistros, 30 , 0, $iAutomatioName, 1, 1)
+Sleep(3000)
+

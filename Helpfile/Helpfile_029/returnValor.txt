@@ -1,0 +1,30 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <File.au3>
+#include <MsgBoxConstants.au3>
+
+$sFilePath = _PathFull(@ScriptDir) & "\Registro_BC.txt"
+
+;; O.S. REGISTRADA  BC
+Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+Local $sFileRead  = FileReadLine($hFileOpen, 22)
+local $iRegistros = StringMid($sFileRead,38,11)
+
+
+;; O.S. REGISTRADA  BC
+Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+Local $sFileRead  = FileReadLine($hFileOpen, 22)
+local $iRegistros = StringMid($sFileRead,38,11)
+
+MsgBox($MB_SYSTEMMODAL, "", $sFilePath)
+
+MsgBox($MB_SYSTEMMODAL, "", $iRegistros)
+

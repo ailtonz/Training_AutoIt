@@ -1,0 +1,37 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+LOCAL $oDictionary,$vKey
+
+$oDictionary = ObjCreate("Scripting.Dictionary")
+
+WITH $oDictionary
+	.ADD("AILTON",0)
+	.ADD("JOSE",1)
+	.ADD("MARIA",2)
+EndWith
+
+; Add keys into an array
+$aKeys = $oDictionary.Keys
+
+; Display keys in the array
+For $i = 0 To $oDictionary.Count -1
+	MsgBox(0x0, 'Keys [ ' & $i & ' ]', $aKeys[$i], 2)
+Next
+
+
+; Add items into an array
+$aItems = $oDictionary.Items
+
+; Display items in the array
+For $i = 0 To $oDictionary.Count -1
+	MsgBox(0x0, 'Items [ ' & $i & ' ]', $aItems[$i], 2)
+Next
+

@@ -1,0 +1,16 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+Func CaptureEsc()
+   Switch @HotKeyPressed ; The last hotkey pressed.
+	   Case "{ESC}" ; String is the {ESC} hotkey.
+			ConfirmaEncerramento()
+   EndSwitch
+EndFunc

@@ -1,0 +1,24 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+; Script Function:
+; While Loop example
+
+$i = 0
+While $i <= 10
+	MsgBox(0, "Value of $i is:", $i)
+	$i = $i + 1
+WEnd
+
+; An infinite loop
+While 1
+	ToolTip("Looping Still!")
+WEnd
+

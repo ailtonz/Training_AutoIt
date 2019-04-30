@@ -1,0 +1,51 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <FileConstants.au3>
+#include <MsgBoxConstants.au3>
+
+;Example()
+
+FileCreate("tmp.log","ok")
+
+Func Example()
+    ; Crie uma variável constante em âmbito local da filepath que será lido / escrito.
+    Local Const $sFilePath = @ScriptDir & "\FileRead.txt"
+
+    ; Criar um arquivo temporário para ler dados de.
+    If Not FileCreate($sFilePath, "This is an example of using FileRead.") Then Return MsgBox($MB_SYSTEMMODAL, "", "An error occurred whilst writing the temporary file.")
+
+    ; Abra o arquivo para ler e armazenar o identificador para uma variável.
+    Local $hFileOpen = FileOpen($sFilePath, $FO_READ)
+    If $hFileOpen = -1 Then
+        MsgBox($MB_SYSTEMMODAL, "", "Ocorreu um erro ao ler o arquivo.")
+        Return False
+    EndIf
+
+    ; Leia o conteúdo do arquivo usando o identificador retornado por FileOpen.
+    Local $sFileRead = FileRead($hFileOpen)
+
+    ; Feche o identificador retornado por FileOpen.
+    FileClose($hFileOpen)
+
+    ; Exibir o conteúdo do arquivo.
+    MsgBox($MB_SYSTEMMODAL, "", "Contents of the file:" & @CRLF & $sFileRead)
+
+    ; Excluir o arquivo temporário.
+    FileDelete($sFilePath)
+EndFunc   ;==>Example
+
+; Create a file.
+Func FileCreate($sFilePath, $sString)
+    Local $bReturn = True ; Crie uma variável para armazenar um valor booleano.
+    If FileExists(@ScriptDir & $sFilePath) = 0 Then $bReturn = FileWrite($sFilePath, $sString) = 1 ; Se FileWrite voltou 1 Isto será verdadeiro caso contrário False.
+    Return $bReturn ; Retorne o valor booleano de qualquer verdadeiro ou falso, dependendo do valor de retorno de FileWrite.
+EndFunc   ;==>FileCreate
+

@@ -1,0 +1,15 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+; Run Example
+Run('Calc')
+Run('Notepad')
+MsgBox(64, 'Functions', 'I started Calculator and Notepad.')
+

@@ -1,0 +1,389 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <File.au3>
+#include <Date.au3>
+#include <MsgBoxConstants.au3>
+#include <StringConstants.au3>
+
+Local $sData = _NowDate()
+Local $xData = StringSplit($sData,"/")
+Local $data = $xData[3] & $xData[2] & $xData[1]
+
+;Para execução Local
+;Global $s_Filename="C:\Users\fabio.taba\Desktop\Compensações PDTI\Exemplo compensação PDTI.xlsx"
+
+;Para execução via citrix
+;Global $s_Directory = "\\Client\C$\Users\fabio.taba\Desktop\Compensações PDTI"
+Global $s_Directory = "\\10.128.222.36\Arrecadacao\PDTI"
+Global $s_Filename = $s_Directory & "\Compensação PDTI.xlsx"
+Global $s_Tablename = "[PDTI$]"
+
+Global $objConnection = ObjCreate("ADODB.Connection")
+Global $objRecordSeti = ObjCreate("ADODB.Recordset")
+Global $objRecordSetx = ObjCreate("ADODB.Recordset")
+
+;Local $hFile = FileOpen(@ScriptDir & "\LOG\Compensar_PDTI_"& $data & ".log", 1)
+Local $hFile = FileOpen($s_Directory & "\Robô\LOG\Compensar_PDTI_"& $data & ".log", 1)
+
+Const $adOpenStatic = 3
+Const $adLockOptimistic = 3
+Const $adCmdText = 0x0001
+
+Global $begin = TimerInit() ; Captura início da execução do Robo
+
+_FileWriteLog($hFile, "****************************************")
+_FileWriteLog($hFile, "*** Início do processamento do Robô - TESTE ***")
+
+MsgBox($MB_SYSTEMMODAL, "", "Início do processamento do Robô  - TESTE")
+
+Valida_Arq_Excel()
+Valida_SAP()
+Captura_Dados_Excel()
+Encerra_Transacao_SAP()
+
+_FileWriteLog($hFile, "*** Fim do processamento do Robô  - TESTE ***")
+MsgBox($MB_SYSTEMMODAL, "", "Fim do processamento do Robô." & CHR(13) & "Tempo de Execução: " & Round((TimerDiff($begin)/1000), 2))
+
+FileClose($hFile)
+Exit
+
+
+Func Valida_Arq_Excel() ;Função para validar existencia do arquivo Excel no diretório correto
+
+   Local $iFileExists = FileExists($s_Filename)
+
+   If Not $iFileExists Then
+	  _FileWriteLog($hFile, "[ERRO] Valida_Arq_Excel() - Arquivo "& $s_Filename &" não encontrado.")
+	  MsgBox($MB_ICONERROR, "Atenção!", "Arquivo " & $s_Filename & " não encontrado.")
+	  Exit
+   EndIf
+
+   _FileWriteLog($hFile, "Valida_Arq_Excel() - Arquivo "& $s_Filename &" encontrado.")
+
+EndFunc
+
+
+Func Valida_SAP() ; Função para validar se SAP está ativo na tela correta
+
+   ;Verifica se janela existe
+   If WinExists("SAP Easy Access") Then
+
+	  ;Faz ativação da janela
+	  WinActivate("SAP Easy Access")
+
+	  ;Aguarda ativação da janela por 10 segundos
+	  $nSapAtv = WinWaitActive("SAP Easy Access", "",10)
+
+	  if $nSapAtv <> 0 Then
+		 ;Maximiza e Ativa Tela Inicial
+		 WinSetState("SAP Easy Access", "", @SW_MAXIMIZE)
+		 WinActivate("SAP Easy Access")
+
+		 _FileWriteLog($hFile, "Valida_SAP() - Acessando transação F-32.")
+
+		 ;Entra na transação F-32
+		 send("F-32",1)
+		 send("{ENTER}")
+	  Else
+		 ;Timeout
+		 _FileWriteLog($hFile, "[ERRO] Valida_SAP() - Timeout na ativação da tela SAP Easy Access.")
+		 MsgBox($MB_ICONERROR, "Atenção!", "O tempo de ativação da tela 'SAP Easy Access' expirou. Favor tentar novamente.")
+		 Exit
+	  EndIf
+   Elseif (WinExists("SAP Logon 730") = 1) And (WinExists("SAP Easy Access") = 0) Then
+		 ;SAP não está na janela correta
+		 _FileWriteLog($hFile, "[ERRO] Valida_SAP() - SAP não está na tela inicial 'SAP Easy Access'.")
+		 MsgBox($MB_ICONERROR, "Atenção!", "Favor manter o SAP na tela inicial 'SAP Easy Access' antes de inciar o robô.")
+		 Exit
+   Else
+		 ;SAP não está ativo
+		 _FileWriteLog($hFile, "[ERRO] Valida_SAP() - SAP Inativo.")
+		 MsgBox($MB_ICONERROR, "Atenção!", "Favor fazer o login no SAP (FIXA - Histórico R/3 4.6C) antes de inciar o robô.")
+		 Exit
+   EndIf
+
+EndFunc
+
+
+Func Captura_Dados_Excel() ;Função para capturar os dados do Excel a serem compensados no SAP
+
+   $objConnection.Open ("Provider=Microsoft.Ace.OLEDB.12.0;" & _
+				   "Data Source="&$s_Filename&";" & _
+				   "Extended Properties=""Excel 12.0;HDR=Yes;"";")
+   $objRecordSeti.Open ("Select * FROM " & $s_Tablename & " where [Montante] <> '' or [Montante] <> null" , $objConnection, $adOpenStatic, $adLockOptimistic, $adCmdText)
+
+   Local $qtde_lin = $objRecordSeti.recordcount
+   Local $qtde_col = $objRecordSeti.fields.count
+
+   _FileWriteLog($hFile, "Captura_Dados_Excel() - Quantidade de linhas do Excel: " & $qtde_lin)
+
+   If $qtde_lin = 0 or $qtde_lin = Null Then
+	  _FileWriteLog($hFile, "[ERRO] Captura_Dados_Excel() - Arquivo " & $s_Filename & " sem conteúdo ou arquivo já está aberto.")
+	  MsgBox($MB_ICONERROR, "Atenção!", "Erro na abertura do arquivo " & $s_Filename & ". Arquivo sem conteúdo ou arquivo já está aberto.")
+	  Exit
+   EndIf
+
+   For $i = 1 To $qtde_lin
+
+	  If Mod($i, 2) <> 0 Then ; Linha ímpares
+
+		 $montante_i = $objRecordSeti.Fields(3).value ;montante
+		 $nroDocumento_i = $objRecordSeti.Fields(7).value ;nro documento
+		 $cliente_i = $objRecordSeti.Fields(11).value ;cliente
+		 $status_i = $objRecordSeti.Fields(15).value ;status
+
+		 Pesquisa_Cliente($cliente_i, 1)
+		 Pesquisa_Doc($nroDocumento_i)
+
+	  Else ; Linhas pares
+
+		 $montante_p = $objRecordSeti.Fields(3).value ;montante
+		 $nroDocumento_p = $objRecordSeti.Fields(7).value ;nro documento
+		 $cliente_p = $objRecordSeti.Fields(11).value ;cliente
+		 $status_p = $objRecordSeti.Fields(15).value ;status
+
+		 Pesquisa_Cliente($cliente_p,2)
+		 Pesquisa_Doc($nroDocumento_p)
+
+		 if(($status_i = 'x') or ($status_i = 'X')) and (($status_p = 'x') or ($status_p = 'X')) Then
+			if (($montante_i * -1) = $montante_p) Then
+			   Compensa_Cliente($nroDocumento_i, $nroDocumento_p, $i)
+			Else
+			   $sText = "VALOR INCONSISTENTE"
+			   $sUpdate = "update " & $s_Tablename & " set Status = '" & $sText & "' where [Nº Documento] in (" & $nroDocumento_i & "," & $nroDocumento_p & ")"
+			   $result = $objConnection.Execute($sUpdate)
+			EndIf
+		 Else
+			; Volta para tela 'Compensar cliente: dados do cabeçalho' para efetuar nova pesquisa
+			Send("{F3}")
+			Sleep(1000)
+			Send("{F3}")
+			Sleep(1000)
+			Send("{TAB}")
+			Sleep(1000)
+			Send("{ENTER}")
+			Sleep(1000)
+		 EndIf
+	  EndIf
+
+   $objRecordSeti.MoveNext()
+
+   Next
+
+   $objRecordSeti.Close
+
+EndFunc
+
+
+Func Pesquisa_Cliente($cliente,$nPesquisa);Função para efetuar consulta na F-32 a partir do cliente
+
+   ;Verifica se o cliente da pesquisa atual é o mesmo da pesquisa anterior
+   ;if $cliente <> $cliente_anterior Then
+   if $nPesquisa = 1 Then
+
+	  ;Faz ativação da janela
+	  WinActivate("Compensar cliente: dados do cabeçalho")
+
+	  ;Aguarda ativação da janela por 10 segundos
+	  $nSapAtv = WinWaitActive("Compensar cliente: dados do cabeçalho", "",10)
+
+	  if $nSapAtv <> 0 Then
+
+		 _FileWriteLog($hFile, "Pesquisa_Cliente() - Pesquisando cliente: " & $cliente)
+
+		 ;Preenche nro do cliente, Empresa e Moeda
+		 Send($cliente,1)
+		 Send("{TAB}")
+		 Send("{TAB}")
+		 Send("{TAB}")
+		 Send("tbra",1)
+		 Send("{TAB}")
+		 Send("brl",1)
+		 Sleep(1000)
+		 Send("{ENTER}")
+	  Else
+		 ;Timeout
+		 _FileWriteLog($hFile, "[ERRO] Pesquisa_Cliente() - Timeout na ativação da tela Compensar cliente: dados do cabeçalho.")
+		 MsgBox($MB_ICONERROR, "Atenção!", "O tempo de ativação da tela 'Compensar cliente: dados do cabeçalho' expirou. Favor tentar novamente.")
+		 Exit
+	  EndIf
+
+   EndIf
+
+   ;$cliente_anterior = $cliente
+
+   ;Aguarda ativação da janela por 10 segundos
+   $nSapAtv = WinWaitActive("Compensar cliente: Processar partidas em aberto", "", 10)
+
+   if $nSapAtv = 0 Then
+	  ;Timeout
+	  _FileWriteLog($hFile, "[ERRO] Pesquisa_Cliente() - Timeout na ativação da tela Compensar cliente: Processar partidas em aberto.")
+	  MsgBox($MB_ICONERROR, "Atenção!", "O tempo de ativação da tela 'Compensar cliente: Processar partidas em aberto' expirou. Favor tentar novamente.")
+	  Exit
+   EndIf
+
+EndFunc
+
+
+Func Pesquisa_Doc($nroDocumento) ;Função para fazer a busca da partida pelo Nº do Documento
+
+   ;Digita Control+F para pesquisar documento
+   Send("^f")
+   Sleep(1000)
+
+   ;Aguarda ativação da janela por 10 segundos
+   $nSapAtv = WinWaitActive("Selecionar crits.pesquisa", "", 10)
+
+   if $nSapAtv = 0 Then
+	  ;Timeout
+	  _FileWriteLog($hFile, "[ERRO] Pesquisa_Doc() - Timeout na ativação da janela Selecionar crits.pesquisa.")
+	  MsgBox($MB_ICONERROR, "Atenção!", "O tempo de ativação da janela 'Selecionar crits.pesquisa' expirou. Favor tentar novamente.")
+	  Exit
+   EndIf
+
+   _FileWriteLog($hFile, "Pesquisa_Doc() - Pesquisando nº documento: " & $nroDocumento)
+
+   ; Seleciona pesquisa por Nº de Documento
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+
+   Send("{DOWN}")
+   Send("{DOWN}")
+   Send("{DOWN}")
+   Sleep(1000)
+   Send("{ENTER}")
+
+   ;Aguarda ativação da janela por 10 segundos
+   $nSapAtv = WinWaitActive("Procurar Nº documento", "", 10)
+
+   if $nSapAtv = 0 Then
+	  ;Timeout
+	  _FileWriteLog($hFile, "[ERRO] Pesquisa_Doc() - Timeout na ativação da janela Procurar Nº documento.")
+	  MsgBox($MB_ICONERROR, "Atenção!", "O tempo de ativação da janela 'Procurar Nº documento' expirou. Favor tentar novamente.")
+	  Exit
+   EndIf
+
+   ; Cola o nº de documento para pesquisar
+   Send($nroDocumento,1)
+   Sleep(2000)
+   Send("{ENTER}")
+   Sleep(1000)
+
+   ;Verifica se janela existe
+   If WinExists("Informação") Then
+	  _FileWriteLog($hFile, "[ERRO] Pesquisa_Doc() - Erro na pesquisa do documento: " & $nroDocumento)
+	  MsgBox($MB_ICONERROR, "Atenção!", "Erro na pesquisa do documento: " & $nroDocumento)
+	  Exit
+   EndIf
+
+   ;Aguarda ativação da janela por 10 segundos
+   $nSapAtv = WinWaitActive("Compensar cliente: Processar partidas em aberto", "", 10)
+
+   if $nSapAtv = 0 Then
+	  ;Timeout
+	  _FileWriteLog($hFile, "[ERRO] Compensa_Cliente() - Timeout na ativação da janela Compensar cliente: Processar partidas em aberto.")
+	  MsgBox($MB_ICONERROR, "Atenção!", "O tempo de ativação da janela 'Compensar cliente: Processar partidas em aberto' expirou. Favor tentar novamente.")
+	  Exit
+   EndIf
+
+   _FileWriteLog($hFile, "Compensa_Cliente() - Marcando Valor")
+
+   Send("{F2}") ; Marca valor no SAP
+   Sleep(3000)
+   Send("{F3}") ; Voltar para tela anterior no SAP
+   Sleep(2000)
+
+EndFunc
+
+
+Func Compensa_Cliente($nroDocumento1, $nroDocumento2, $linha) ;Função que marca as partidas selecionadas e efetiva as compensações no SAP
+
+	  _FileWriteLog($hFile, "Compensa_Cliente() - Gravando Compensação")
+	  ;MsgBox($MB_SYSTEMMODAL, "", "Gravar compensação!")
+	  ;(*)Pendencia 1 - Gravar compensação -> Control+S
+	  ;(*)Pendência 2 - Capturar numero do documento gerado e gravar na coluna Status da planilha Excel
+	  ;(*)Pendencia 3 - Voltar para tela "Compensar cliente: dados do cabeçalho"
+
+	  ;Digita Control+S para gravar Compensação de Valores
+;(*) RETIRAR COMENTARIOS EM BLOCO *******************************
+	  ;Send("^s")
+	  ;Sleep(1000)
+; (*) ***********************************************************
+
+;(*) RETIRAR ESTE TRECHO *****************************************
+	  Send("{F3}")
+	  Sleep(1000)
+	  Send("{F3}")
+	  Sleep(1000)
+	  Send("{TAB}")
+	  Sleep(1000)
+	  Send("{ENTER}")
+	  Sleep(1000)
+
+	  Local $sText = "Linha: " & $linha
+	  local $sUpdate = "update " & $s_Tablename & " set Status = '" & $sText & "' where [Nº Documento] in (" & $nroDocumento1 & "," & $nroDocumento2 & ")"
+
+	  _FileWriteLog($hFile, "Atualizando: " & $sUpdate)
+
+	  $result = $objConnection.Execute($sUpdate)
+; (*) ************************************************************
+
+;(*) RETIRAR COMENTARIOS EM BLOCO *******************************************************************
+;~ 	  ;Aguarda ativação da janela por 10 segundos
+;~ 	  $nSapAtv = WinWaitActive("Compensar cliente: dados do cabeçalho", "",10)
+
+;~ 	  if $nSapAtv <> 0 Then
+
+;~ 		 _FileWriteLog($hFile, "Compensa_Cliente() - Atualizando status da planilha.")
+
+;~ 		 ; Captura numero do documento de compensação gerado
+;~ 		 Local $sText = StringStripWS(WinGetText("[CLASS:SAP_FRONTEND_SESSION]"), $STR_STRIPLEADING + $STR_STRIPTRAILING)
+;~ 		 Local $sTextArray = StringSplit($sText, " ")
+
+;~ 		 ;Atualiza Planilha com Status
+;~ 		 local $sUpdate = "update " & $s_Tablename & " set Status = " & $sTextArray[2] & " where [Nº Documento] in (" & $nroDocumento1 & "," & $nroDocumento2 & ")"
+
+;~ 		 $result = $objConnection.Execute($sUpdate)
+
+;~ 		 ;Zera variável $cliente_anterior
+;~ 		 $cliente_anterior = Null
+;~ 	  Else
+;~ 		 ;Timeout
+;~ 		 _FileWriteLog($hFile, "[ERRO] Compensa_Cliente() - Timeout na ativação da tela Compensar cliente: dados do cabeçalho.")
+;~ 		 MsgBox($MB_ICONERROR, "Atenção!", "O tempo de ativação da tela 'Compensar cliente: dados do cabeçalho' expirou. Favor tentar novamente.")
+;~ 		 Exit
+;~ 	  EndIf
+;(*) *************************************************************************************************
+EndFunc
+
+Func Encerra_Transacao_SAP()
+
+	  ;Aguarda ativação da janela por 10 segundos
+	  $nSapAtv = WinWaitActive("Compensar cliente: dados do cabeçalho", "",10)
+
+	  if $nSapAtv <> 0 Then
+
+		 _FileWriteLog($hFile, "Encerra_Transação_SAP() - Encerrando Transação no SAP")
+
+		 ; Encerra sessão no SAP
+		 Send("!d")
+		 Send("n")
+
+	  Else
+		 ;Timeout
+		 _FileWriteLog($hFile, "[ERRO] Pesquisa_Cliente() - Timeout na ativação da tela Compensar cliente: dados do cabeçalho.")
+		 MsgBox($MB_ICONERROR, "Atenção!", "O tempo de ativação da tela 'Compensar cliente: dados do cabeçalho' expirou. Favor tentar novamente.")
+		 Exit
+	  EndIf
+
+EndFunc
+

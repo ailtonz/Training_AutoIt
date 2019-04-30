@@ -1,0 +1,26 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <MsgBoxConstants.au3>
+Example()
+
+Func Example()
+
+   Local $hWnd = WinWait("TOTVS Série T Serviços (Microsiga) 02.9.0001", "", 10)
+   ;Local $hWnd = WinWait("[ACTIVE]", "", 10)
+      ; Move the Notepad to the x, y position of 0, 0 and set the height and width at 200, 200.
+    WinMove($hWnd, "", 60, 60, 1250, 600)
+
+   Local $aClientSize = WinGetClientSize($hWnd)
+
+    ; Display the height and width of the client area.
+    MsgBox($MB_SYSTEMMODAL, "", "Width: " & $aClientSize[0] & @CRLF & "Height: " & $aClientSize[1])
+EndFunc   ;==>Example
+

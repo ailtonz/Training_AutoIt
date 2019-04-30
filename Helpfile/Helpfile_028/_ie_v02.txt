@@ -1,0 +1,21 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <IE.au3>
+local $Caminho = "http://10.20.142.117:8081/caixaEntrada/index.jsp?close=1"
+Local $oIE = _IECreate($Caminho)
+Local $oForm 			= _IEFormGetObjByName($oIE, "userForm")
+Local $o_txt_user 		= _IEFormElementGetObjByName($oForm, "user")
+Local $o_txt_pwd 		= _IEFormElementGetObjByName($oForm, "password")
+_IEFormElementSetValue($o_txt_user, "r113211")
+_IEFormElementSetValue($o_txt_pwd, "2015@vivo")
+_IEFormSubmit($oForm)
+Exit
+

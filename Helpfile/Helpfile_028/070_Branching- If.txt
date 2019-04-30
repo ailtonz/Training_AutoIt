@@ -1,0 +1,22 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+; Branching Example using If...EndIf Statement
+
+$var = 20
+
+If $var > 10 Then
+	MsgBox(0, "Example", "$var was greater than 10")
+Elseif $var = 10 Then
+	MsgBox(0, "Example", "$var was equal than 10")
+Else
+	MsgBox(0, "Example", "$var was less than 10")
+EndIf
+

@@ -1,0 +1,24 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <ProgressConstants.au3>
+
+#include "_ProgressGUI.au3"
+$Return = _ProgressGUI("This is a test message xxxxxxxxxxxxxxx xxxxxxxxxxxxx", 1, 30, "", 400, 300);, 4, 6)
+For $I = 1 To 100
+    GUICtrlSetData($Return[1], $I)
+    Sleep(100)
+    If Mod($I, 2) Then GUISetBkColor(Random(0, 32767, 1), $Return[0])
+Next
+Sleep(2000)
+GUIDelete($Return[0])
+$Return = _ProgressGUI()
+Sleep(4000)
+

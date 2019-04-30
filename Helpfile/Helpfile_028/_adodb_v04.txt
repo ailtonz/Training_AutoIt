@@ -1,0 +1,36 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <Array.au3>
+Local $CAMPOS[5] = ["CLIENTE", "NSA", "NSR", "CNPJ", "DATEL"]
+Local $VALORES[5] = ["AILTON", "000000", "00000000", "054419620", "0000000"]
+
+execMSAccess (@ScriptDir & "\" & "Baixa Datéis.mdb","01_Dateis", $CAMPOS,$VALORES)
+
+Func execMSAccess ($dbname, $tblname,$CAMPOS,$VALORES)
+LOCAL $adoCon = ObjCreate("ADODB.Connection")
+LOCAL $SQL = "Insert into " & $tblname & " (["& _ArrayToString($CAMPOS,"],[") &"]) values ('"& _ArrayToString($VALORES,"', '") & "');"
+
+;$adoCon.Open("Driver={Microsoft Access Driver (*.mdb)}; DBQ=" & $dbname) ;Use this line if using MS Access 2003 and lower
+$adoCon.Open ("Provider=Microsoft.Jet.OLEDB.4.0; Data Source=" & $dbname) ;Use this line if using MS Access 2007 and using the .accdb file extension
+
+if $adoCon.state = 1 Then
+   for $x=1 to 10
+	  $adoCon.Execute($SQL)
+   next
+   Return 1
+Else
+   Return 0
+EndIf
+
+$adoCon.Close
+
+EndFunc
+

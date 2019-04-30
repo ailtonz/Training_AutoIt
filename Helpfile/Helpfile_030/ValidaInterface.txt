@@ -1,0 +1,32 @@
+###
+###
+###
+### Category1 : SCO
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+Func ValidaInterface()
+IF $AnaliseCodigo = 1 then ConsoleWrite("ValidaInterface" & @CRLF)
+	Local $strAux = ""
+
+	if (GUICtrlRead($txtUser) = "") or (GUICtrlRead($txtPwd) = "") Then
+		 $strAux = $strAux & "  - Preencha todos os dados de acesso" & @CRLF
+	Else
+		 $UserIni = StringLeft(GUICtrlRead($txtUser),1)
+		 $UserMid = StringMid(GUICtrlRead($txtUser),2,StringLen(GUICtrlRead($txtUser))-2)
+		 $UserDig = StringRight(GUICtrlRead($txtUser),1)
+		 $UserPwd = GUICtrlRead($txtPwd)
+		 $csoTransacao = "FPAG"
+		 $csoMonitor = "/rc"
+	EndIf
+
+	if $strAux = "" Then
+		__PRODUCAO()
+	Else
+		MsgBox($MB_ICONERROR, $iMsgTitle,"Ocorreram inconsistências no preenchimento. Veja abaixo:" & @CRLF & @CRLF & $strAux)
+	EndIf
+
+EndFunc

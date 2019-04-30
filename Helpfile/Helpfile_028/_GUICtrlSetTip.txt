@@ -1,0 +1,66 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <EasyTip.au3>
+
+HotKeySet("{Esc}", "CaptureEsc")
+
+Func CaptureEsc()
+Switch @HotKeyPressed ; The last hotkey pressed.
+Case "{ESC}" ; String is the {ESC} hotkey.
+Exit
+EndSwitch
+EndFunc
+
+; GuiCtrlSetTip
+GUICreate("Form1", 296, 170, -1, -1)
+GUICtrlCreateButton("OEM", 8, 8, 81, 25)
+GUICtrlSetTip(-1,"Test tip with just text.")
+GUICtrlCreateButton("OEM 2", 8, 33, 81, 25)
+GUICtrlSetTip(-1,"Test tip with text and title.","Optional title")
+GUICtrlCreateButton("OEM 3", 8, 59, 81, 25)
+GUICtrlSetTip(-1,"Test tip with text, title and Icon.","Optional title",1)
+GUICtrlCreateButton("OEM 4", 8, 84, 81, 25)
+GUICtrlSetTip(-1,"Test tip with text, title, Icon & balloon style.","Optional title",1,1)
+GUICtrlCreateButton("OEM 5", 8, 109, 81, 25)
+GUICtrlSetTip(-1,"Test tip with text, title, Icon & hovering under control.","Optional title",1,2)
+GUICtrlCreateButton("OEM 6", 8, 135, 81, 25)
+GUICtrlSetTip(-1,"Test tip with text, title, Icon & hovering under control with stem pointing to item.","Optional title",1,3)
+
+
+; _GuiCtrlSetTip
+GUICtrlCreateButton("Custom 1", 90, 8, 81, 25)
+_GUICtrlSetTip(-1,"Test tip with just text.")
+GUICtrlCreateButton("Custom 2", 90, 33, 81, 25)
+_GUICtrlSetTip(-1,"Test tip with text and title.","Optional title")
+GUICtrlCreateButton("Custom 3", 90, 59, 81, 25)
+_GUICtrlSetTip(-1,"Test tip with text, title and Icon.","Optional title",1)
+GUICtrlCreateButton("Custom 4", 90, 84, 81, 25)
+_GUICtrlSetTip(-1,"Test tip with text, title, Icon & balloon style.","Optional title",1,1)
+GUICtrlCreateButton("Custom 5", 90, 109, 81, 25)
+_GUICtrlSetTip(-1,"Test tip with text, title, Icon & hovering under control.","Optional title",1,2)
+GUICtrlCreateButton("Custom 6", 90, 135, 81, 25)
+_GUICtrlSetTip(-1,"Test tip with text, title, Icon & hovering under control with stem pointing to item.","Optional title",1,3)
+GUICtrlCreateButton("Custom 7", 172, 8, 81, 25)
+_GUICtrlSetTip(-1,"Test tip with text, title, Custom Icon & hovering under control with stem pointing to item.","Optional title",@SystemDir & "\taskmgr.exe,107",3)
+GUICtrlCreateButton("Custom 8", 172, 33, 81, 25)
+_GUICtrlSetTip(-1,"Test tip with text, title, Custom Icon, hovering under control with stem pointing to item & custom colors.","Optional title",@SystemDir & "\taskmgr.exe,107",3,0x000000,0x00ff00)
+GUICtrlCreateButton("Custom 9", 172, 59, 81, 25)
+_GUICtrlSetTip(-1,"Test tip with text, title, Custom Icon, hovering under control with stem pointing to item, custom colors and custom delay time.","Optional title",@SystemDir & "\taskmgr.exe,107",3,0x000000,0x00ff00,1000)
+GUICtrlCreateButton("Example 1", 172, 84, 81, 25)
+_GUICtrlSetTip(-1,"Test tip with text, title, Custom Icon, hovering under control with stem pointing to item & custom colors.","Optional title",@SystemDir & "\taskmgr.exe,107",0,0x000000,0x00ff00)
+GUICtrlCreateButton("Example 2", 172, 109, 81, 25)
+_GUICtrlSetTip(-1,"Test tip with text, title, Custom Icon, hovering under control with stem pointing to item & custom colors.","Optional title",@SystemDir & "\taskmgr.exe,107",1,0x000000,0x00ff00)
+GUICtrlCreateButton("Example 3", 172, 135, 81, 25)
+_GUICtrlSetTip(-1,"Test tip with text, title, Custom Icon, hovering under control with stem pointing to item & custom colors.","Optional title",@SystemDir & "\taskmgr.exe,107",2,0x000000,0x00ff00)
+GUISetState(@SW_SHOW)
+While GUIGetMsg() <> -3
+WEnd
+

@@ -1,0 +1,21 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <File.au3>
+
+$file = "C:\Users\80364630\Documents\Luiz Alencar\Projeto Consiliacao Microsiga\Arquivos\Bradesco\CB231201.RET"
+FileOpen($file, 0)
+
+For $i = 1 to _FileCountLines($file)
+    $line = FileReadLine($file, $i)
+msgbox(0,'','the line ' & $i & ' is ' & $line)
+Next
+FileClose($file)
+

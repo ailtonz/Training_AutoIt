@@ -1,0 +1,16 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+; Send Example
+
+Run('Notepad')
+WinWait('Untitled - Notepad')
+Send('AutoIt is typing text{ENTER}into this window.')
+

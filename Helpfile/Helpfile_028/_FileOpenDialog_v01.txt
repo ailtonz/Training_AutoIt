@@ -1,0 +1,71 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <FileConstants.au3>
+#include <MsgBoxConstants.au3>
+#include <Array.au3>
+#include <file.au3>
+
+Example()
+
+Func Example()
+    ; Create a constant variable in Local scope of the message to display in FileOpenDialog.
+    Local Const $sMessage = "Selecione um único arquivo."
+
+    ; Display an open dialog to select a file.
+    Local $sFileOpenDialog = FileOpenDialog($sMessage, @WindowsDir & "\", "All (*.*)", $FD_FILEMUSTEXIST)
+    If @error Then
+        ; Display the error message.
+        MsgBox($MB_SYSTEMMODAL, "", "Nenhum arquivo foi selecionado.")
+
+        ; Change the working directory (@WorkingDir) back to the location of the script directory as FileOpenDialog sets it to the last accessed folder.
+        FileChangeDir(@ScriptDir)
+    Else
+        ; Change the working directory (@WorkingDir) back to the location of the script directory as FileOpenDialog sets it to the last accessed folder.
+        FileChangeDir(@ScriptDir)
+
+        ; Replace instances of "|" with @CRLF in the string returned by FileOpenDialog.
+        $sFileOpenDialog = StringReplace($sFileOpenDialog, "|", @CRLF)
+
+        ; Display the selected file.
+;~         MsgBox($MB_SYSTEMMODAL, "", "Você escolheu o seguinte arquivo:" & @CRLF & $sFileOpenDialog)
+
+		openFile($sFileOpenDialog)
+
+
+    EndIf
+EndFunc   ;==>Example
+
+
+func openFile($sFilePath)
+
+    ; Abra o arquivo para ler e armazenar o identificador para uma variável.
+    Local $hFileOpen = FileOpen($sFilePath, $FO_READ)
+    If $hFileOpen = -1 Then
+        MsgBox($MB_SYSTEMMODAL, "", "Ocorreu um erro ao ler o arquivo.")
+        Return False
+    EndIf
+
+    ; Leia o conteúdo do arquivo usando o identificador retornado por FileOpen.
+    Local $sFileRead = FileRead($hFileOpen)
+
+
+    ; Feche o identificador retornado por FileOpen.
+    FileClose($hFileOpen)
+
+    ; Exibir o conteúdo do arquivo.
+    MsgBox($MB_SYSTEMMODAL, "", "Contents of the file:" & @CRLF & $sFileRead)
+
+
+EndFunc
+
+
+
+

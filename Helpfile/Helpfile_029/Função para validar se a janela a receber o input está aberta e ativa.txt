@@ -1,0 +1,40 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+Func ValidaTelaInput() ;Função para validar se a janela a receber o input está aberta e ativa
+IF $AnaliseCodigo = 1 then ConsoleWrite("ValidaTelaInput" & @CRLF)
+
+   ;Verifica se janela existe
+   If WinExists("[REGEXPTITLE:" & $WindowTitle & ".+]") Then
+
+		;Faz ativação da janela
+		WinActivate("[REGEXPTITLE:" & $WindowTitle & ".+]")
+
+		;Aguarda ativação da janela por 10 segundos
+		$nSapAtv = WinWaitActive("[REGEXPTITLE:" & $WindowTitle & ".+]", "",10)
+
+		if $nSapAtv <> 0 Then
+			;Maximiza e Ativa Tela Inicial
+			WinSetState("[REGEXPTITLE:" & $WindowTitle & ".+]", "", @SW_MAXIMIZE)
+			WinActivate("[REGEXPTITLE:" & $WindowTitle & ".+]")
+		Else
+			;Timeout
+			_FileWriteLog($hFile, "[ERRO] ValidaTelaInput() - Timeout na ativação da tela " & $WindowTitle & ".")
+			MsgBox($MB_ICONERROR, $iMsgTitle, "O tempo de ativação da tela '" & $WindowTitle & "' expirou. Favor tentar novamente.")
+			_Exit()
+		EndIf
+   Else
+		;Janela não está ativa
+		_FileWriteLog($hFile, "[ERRO] ValidaTelaInput() - Janela " & $WindowTitle & " inativa.")
+		MsgBox($MB_ICONERROR, $iMsgTitle, "Esta automação necessita de uma aplicação de nome " & $WindowTitle & ". Por favor abra esta aplicação antes de iniciar o processo.")
+		_Exit()
+   EndIf
+
+EndFunc

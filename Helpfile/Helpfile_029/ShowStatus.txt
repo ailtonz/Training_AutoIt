@@ -1,0 +1,17 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+Func _ShowStatus($Texto, $Titulo = "")
+   IF $Texto <> "" THEN
+	  ToolTip($Texto,(@DesktopWidth - 100),(@DesktopHeight - 75),$Titulo,1,4)
+   Else
+	  ToolTip("")
+   EndIf
+EndFunc

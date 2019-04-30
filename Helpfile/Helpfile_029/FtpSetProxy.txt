@@ -1,0 +1,13 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+HttpSetProxy(0)
+HttpSetProxy(2, "proxysp.vivo.com.br:8080")
+

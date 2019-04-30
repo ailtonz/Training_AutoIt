@@ -1,0 +1,45 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <Array.au3>
+#include <WinAPIProc.au3>
+
+Local $aData = _WinAPI_EnumChildProcess(_WinAPI_GetParentProcess())
+
+
+
+For $i=1 to 2 step 0
+Sleep(150)
+$Result=_Check()
+
+ ConsoleWrite($Result&@CRLF)
+
+;~ _ArrayDisplay($aData, '_WinAPI_EnumChildProcess')
+
+
+Next
+
+Func _Check()
+
+Local $Mpos=MouseGetPos()
+MsgBox(0,"",$Mpos[1])
+Local $hPoint = DllCall("User32.dll", "hwnd", "WindowFromPoint", "int", $Mpos[0], "int", $Mpos[1])
+Local $aRet = DllCall("User32.dll","int","GetWindowTextLengthW","hwnd",$hPoint[0])
+Local $nChars = $aRet[0]
+Local $bBuf = DllStructCreate("wchar[" & $nChars + 2 & "]") ;Remember null
+
+$aRet = DllCall("User32.dll","int","GetWindowTextW","hwnd",$hPoint[0],"ptr",DllStructGetPtr($bBuf),"int",$nChars+1)
+
+Local $szWindowText = DllStructGetData($bBuf,1)
+
+return DllStructGetData($bBuf,1)
+
+EndFunc
+

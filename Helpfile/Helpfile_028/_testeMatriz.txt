@@ -1,0 +1,36 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+GLOBAL $REGISTRO[1][14]
+
+$REGISTRO[0][0] = "BANCO"
+$REGISTRO[0][1] = "DT.CREDITO"
+$REGISTRO[0][2] = "NUM DOCTO"
+$REGISTRO[0][3] = "VALOR DOCTO"
+$REGISTRO[0][4] = "COD"
+$REGISTRO[0][5] = "DT.PAGTO"
+$REGISTRO[0][6] = "DT.GERACAO"
+$REGISTRO[0][7] = "NSA"
+$REGISTRO[0][8] = "NSR"
+$REGISTRO[0][9] = "CLIENTE"
+$REGISTRO[0][10] = "Orgao"
+$REGISTRO[0][11] = "CNPJ"
+$REGISTRO[0][12] = "RE"
+$REGISTRO[0][13] = "EMITENTE"
+
+
+
+
+
+FOR $x = 0 to 1
+
+   MsgBox (0,"REGISTRO " & $x , "" & $REGISTRO[$x][0] & @CRLF & $REGISTRO[$x][1] &  @CRLF & $REGISTRO[$x][2] & "")
+   Next
+

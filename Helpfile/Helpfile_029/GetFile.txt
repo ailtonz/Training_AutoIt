@@ -1,0 +1,19 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+Func _GetFile($sFile, $iFormat = 0)
+    Local $hFileOpen = FileOpen($sFile, $iFormat)
+    If $hFileOpen = -1 Then
+        Return SetError(1, 0, "")
+    EndIf
+    Local $sData = FileRead($hFileOpen)
+    FileClose($hFileOpen)
+    Return $sData
+EndFunc

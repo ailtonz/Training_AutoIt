@@ -1,0 +1,32 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+
+
+;~ ; Initialize COM error handler
+;~ $oMyError = ObjEvent("AutoIt.Error","MyErrFunc")
+
+$sqlCon = ObjCreate("ADODB.Connection")
+
+$sqlCon.Mode = 16  ; shared
+$sqlCon.CursorLocation = 3 ; client side cursor
+
+$sqlCon.Open ("Provider=OraOLEDB.Oracle; Data Source=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=dtbn-clu-scan.redecorp.br)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=srv_geral.WORLD)(SERVER=DEDICATED)));USER ID=DB_PRD;PASSWORD=dtbn4225")
+MsgBox(0,"",$sqlCon.STATE)
+
+
+If @error Then
+    MsgBox(0, "ERROR", "Failed to connect to the database")
+    Exit
+Else
+	MsgBox(0, "", "OK")
+    Exit
+EndIf
+

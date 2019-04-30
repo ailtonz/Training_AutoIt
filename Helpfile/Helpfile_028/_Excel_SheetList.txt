@@ -1,0 +1,33 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <Array.au3>
+#include <Excel.au3>
+#include <MsgBoxConstants.au3>
+
+Local $fileName = "C:\Users\a.dasilva\Desktop\ACCENTURE\Projeto Aline\#ID.75_ROBÔ DESCONTO DE MARKETING - GARANTIA DA RECEITA\Alteracoes_contas_abril.xls"
+
+; Create application object and open a workbook
+Local $oAppl = _Excel_Open()
+If @error Then Exit MsgBox($MB_SYSTEMMODAL, "Excel UDF: _Excel_SheetList Example", "Error creating the Excel application object." & @CRLF & "@error = " & @error & ", @extended = " & @extended)
+Local $oWorkbook = _Excel_BookOpen($oAppl, $fileName)
+If @error Then
+    MsgBox($MB_SYSTEMMODAL, "Excel UDF: _Excel_SheetList Example", "Error opening workbook '" & $fileName &" ." & @CRLF & "@error = " & @error & ", @extended = " & @extended)
+    _Excel_Close($oAppl)
+    Exit
+EndIf
+
+; *****************************************************************************
+; Display a list of all worksheets for a specific Workbook
+; *****************************************************************************
+Local $aWorkSheets = _Excel_SheetList($oWorkbook)
+If @error Then Exit MsgBox($MB_SYSTEMMODAL, "Excel UDF: _Excel_SheetList Example 1", "Error listing Worksheets." & @CRLF & "@error = " & @error & ", @extended = " & @extended)
+_ArrayDisplay($aWorkSheets, "Excel UDF: _Excel_SheetList Example 1")
+

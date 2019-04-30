@@ -1,0 +1,270 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <File.au3>
+#include <Date.au3>
+#include <MsgBoxConstants.au3>
+#include <Constants.au3>
+#include <StringConstants.au3>
+
+;Quando pressionar a tecla 'Esc' sai da rotina
+HotKeySet("{Esc}", "CaptureEsc")
+
+Global $iAutomatioName = "Cria_Documentos_PDTI"
+Global $iMsgTitle = "Automação - " & $iAutomatioName
+Global $iSheetName = "CRIA_DOC_PDTI.xlsx"
+Global $iTransaction = "F-02"
+Global $SleepTime = 100
+
+Global $s_Directory = @ScriptDir
+;Global $s_Directory = "\\10.128.222.36\Arrecadacao\PDTI"
+Global $s_Filename = $s_Directory & "\" & $iSheetName
+Global $s_Tablename = "[CRIA_DOC_PDTI$A2:P10000]"
+
+Global $objConnection = ObjCreate("ADODB.Connection")
+Global $objRecordSeti = ObjCreate("ADODB.Recordset")
+
+Local $sData = _NowDate()
+Local $xData = StringSplit($sData,"/")
+Local $data = $xData[3] & $xData[2] & $xData[1]
+Local $hFile = FileOpen($s_Directory & "\Robô\LOG\" & $iAutomatioName & "_" & $data & ".log", 1)
+
+Const $adOpenStatic = 3
+Const $adOpenDynamic = 2
+Const $adLockOptimistic = 3
+Const $adLockPessimistic = 2
+Const $adCmdText = 0x0001
+
+Global $begin = TimerInit() ; Captura início da execução do Robo
+
+_FileWriteLog($hFile, "-----------------------------------------------------------------------------------------")
+_FileWriteLog($hFile, "--- Início da automação - " & $iAutomatioName & " ---")
+
+ConfirmaInicio()
+Valida_Arq_Excel()
+Valida_SAP()
+ProcessaPlanilha()
+
+_FileWriteLog($hFile, "--- Fim da automação - " & $iAutomatioName & " ---")
+MsgBox($MB_SYSTEMMODAL, "", "Fim da automação - " & $iAutomatioName & " " & CHR(13) & "Tempo de Execução: " & Round((TimerDiff($begin)/1000), 2))
+
+FileClose($hFile)
+Exit
+
+Func Valida_Arq_Excel() ;Função para validar existencia do arquivo Excel no diretório correto
+
+   Local $iFileExists = FileExists($s_Filename)
+
+   If Not $iFileExists Then
+	  _FileWriteLog($hFile, "[ERRO] Valida_Arq_Excel() - Arquivo "& $s_Filename &" não encontrado.")
+	  MsgBox($MB_ICONERROR, $iMsgTitle, "Arquivo " & $s_Filename & " não encontrado.")
+	  Exit
+   EndIf
+
+   _FileWriteLog($hFile, "Valida_Arq_Excel() - Arquivo "& $s_Filename &" encontrado.")
+
+EndFunc
+
+Func Valida_SAP() ; Função para validar se SAP está ativo na tela correta
+
+   ;Verifica se janela existe
+   If WinExists("[REGEXPTITLE:SAP Easy Access.+]") Then
+
+	  ;Faz ativação da janela
+	  WinActivate("[REGEXPTITLE:SAP Easy Access.+]")
+
+	  ;Aguarda ativação da janela por 10 segundos
+	  $nSapAtv = WinWaitActive("[REGEXPTITLE:SAP Easy Access.+]", "",10)
+
+	  if $nSapAtv <> 0 Then
+		 ;Maximiza e Ativa Tela Inicial
+		 WinSetState("[REGEXPTITLE:SAP Easy Access.+]", "", @SW_MAXIMIZE)
+		 WinActivate("[REGEXPTITLE:SAP Easy Access.+]")
+
+		 _FileWriteLog($hFile, "Valida_SAP() - Acessando transação " & $iTransaction & ".")
+
+		 ;Entra na transação
+		 ControlSend("[REGEXPTITLE:SAP Easy Access.+]","","Edit1",$iTransaction & "{ENTER}")
+		 Sleep(1000)
+
+	  Else
+		 ;Timeout
+		 _FileWriteLog($hFile, "[ERRO] Valida_SAP() - Timeout na ativação da tela SAP Easy Access.")
+		 MsgBox($MB_ICONERROR, $iMsgTitle, "O tempo de ativação da tela 'SAP Easy Access' expirou. Favor tentar novamente.")
+		 Exit
+	  EndIf
+   Elseif (WinExists("SAP Logon 730") = 1) And (WinExists("[REGEXPTITLE:SAP Easy Access.+]") = 0) Then
+		 ;SAP não está na janela correta
+		 _FileWriteLog($hFile, "[ERRO] Valida_SAP() - SAP não está na tela inicial 'SAP Easy Access'.")
+		 MsgBox($MB_ICONERROR, $iMsgTitle, "Favor manter o SAP na tela inicial 'SAP Easy Access' antes de inciar o robô.")
+		 Exit
+   Else
+		 ;SAP não está ativo
+		 _FileWriteLog($hFile, "[ERRO] Valida_SAP() - SAP Inativo.")
+		 MsgBox($MB_ICONERROR, $iMsgTitle, "Favor fazer o login no SAP antes de inciar o robô.")
+		 Exit
+   EndIf
+
+EndFunc
+
+Func ProcessaPlanilha() ;Função varrer a planilha e executar as ações no SAP
+
+   $objConnection.Open ("Provider=Microsoft.Jet.OLEDB.4.0;" & _
+				   "Data Source="&$s_Filename&";" & _
+				   "Extended Properties=""Excel 12.0;HDR=Yes;"";")
+   $objRecordSeti.Open ("SELECT * FROM " & $s_Tablename & "", $objConnection,  $adOpenStatic, $adLockOptimistic, $adCmdText)
+
+   msgbox(0,"",$objRecordSeti.recordcount & " linhas nessa bosta")
+
+   Local $qtde_lin = $objRecordSeti.recordcount
+   Local $qtde_col = $objRecordSeti.fields.count
+
+   _FileWriteLog($hFile, "ProcessaPlanilha() - Quantidade de linhas do arquivo Excel: " & $qtde_lin)
+
+   If $qtde_lin <= 0 or $qtde_lin = Null Then
+	  _FileWriteLog($hFile, "[ERRO] ProcessaPlanilha() - Arquivo " & $s_Filename & " sem conteúdo ou arquivo já está aberto.")
+	  MsgBox($MB_ICONERROR, $iMsgTitle, "Erro na abertura do arquivo " & $s_Filename & ". Arquivo sem conteúdo ou arquivo já está aberto.")
+	  Exit
+   EndIf
+
+   For $i = 1 To $qtde_lin
+	  if (($objRecordSeti.Fields(15).value = "") or ($objRecordSeti.Fields(15).value = Null)) then
+		 PrimeiraTela()
+		 SegundaTela()
+		 TerceiraTela()
+		 ;$objRecordSeti.Fields(15).value = Finaliza()
+		 $objRecordSeti.Fields(15).value = FinalizaFAKE()
+		 SendWait("{ENTER}-----",$SleepTime,2)
+		 SendWait("{ENTER}",$SleepTime)
+	  EndIf
+
+	  $objRecordSeti.MoveNext()
+	  Sleep(1000)
+
+   Next
+
+   $objRecordSeti.Close
+
+EndFunc
+
+Func PrimeiraTela() ;Preenche a primeira tela
+
+   SendWait($objRecordSeti.Fields(0).value,$SleepTime) ;------------VencLíquid
+   SendWait("{TAB}",$SleepTime)
+   SendWait($objRecordSeti.Fields(1).value,$SleepTime) ;------------Tipo
+   SendWait("{TAB}",$SleepTime)
+   SendWait($objRecordSeti.Fields(2).value,$SleepTime) ;------------Empresa
+   SendWait("{TAB}",$SleepTime,2)
+   SendWait($objRecordSeti.Fields(3).value,$SleepTime,1,"%02s") ;---Período
+   SendWait("{TAB}",$SleepTime)
+   SendWait($objRecordSeti.Fields(4).value,$SleepTime) ;------------Moeda
+   SendWait("{TAB}",$SleepTime,4)
+   SendWait($objRecordSeti.Fields(5).value,$SleepTime) ;------------Referencia
+   SendWait("{TAB}",$SleepTime,2)
+   SendWait($objRecordSeti.Fields(6).value,$SleepTime) ;------------Tx.Cab.doc.
+   SendWait("{TAB}",$SleepTime,2)
+   SendWait($objRecordSeti.Fields(7).value,$SleepTime,1,"%02s") ;---CL.
+   SendWait("{TAB}",$SleepTime)
+   SendWait($objRecordSeti.Fields(8).value,$SleepTime) ;------------conta
+   SendWait("{ENTER}",2000)
+
+   ;Valida se a data de vencimento está fora do período
+   Local $iAuxPeriodo = StringSplit($objRecordSeti.Fields(0).value,".")
+   If $iAuxPeriodo[2] <> StringFormat("%02s",$objRecordSeti.Fields(3).value) Then
+	  SendWait("{ENTER}",2000)
+   EndIf
+
+EndFunc
+
+Func SegundaTela() ;Preenche a segunda tela
+
+   SendWait($objRecordSeti.Fields(9).value,$SleepTime) ;-----------MONTANTE
+   SendWait("{TAB}",$SleepTime,4)
+   SendWait($objRecordSeti.Fields(10).value,$SleepTime,1,"%04s") ;--BUSPI/SECT
+   SendWait("{TAB}",$SleepTime,20)
+   SendWait($objRecordSeti.Fields(11).value,$SleepTime) ;-----------ATRIBUIÇÃO
+   SendWait("{TAB}",$SleepTime)
+   SendWait($objRecordSeti.Fields(12).value,$SleepTime) ;-----------TEXTO
+   SendWait("{TAB}",$SleepTime,2)
+   SendWait($objRecordSeti.Fields(13).value,$SleepTime,1,"%02s") ;--CL
+   SendWait("{TAB}",$SleepTime)
+   SendWait($objRecordSeti.Fields(14).value,$SleepTime) ;-----------CONTA
+   SendWait("{ENTER}",2000)
+
+EndFunc
+
+Func TerceiraTela() ;Preenche a terceira tela
+
+   SendWait($objRecordSeti.Fields(9).value,$SleepTime) ;-----------MONTANTE
+   SendWait("{TAB}",$SleepTime)
+   SendWait($objRecordSeti.Fields(10).value,$SleepTime,1,"%04s") ;--BUSPI/SECT
+   SendWait("{TAB}",$SleepTime,4)
+   SendWait($objRecordSeti.Fields(11).value,$SleepTime) ;-----------ATRIBUIÇÃO
+   SendWait("{TAB}",$SleepTime)
+   SendWait($objRecordSeti.Fields(12).value,$SleepTime) ;-----------TEXTO
+
+EndFunc
+
+Func Finaliza() ;Finaliza a operação
+
+   SendWait("^s",2000)
+
+   ; Captura numero do documento de compensação gerado
+   Local $sText = StringStripWS(WinGetText("[CLASS:SAP_FRONTEND_SESSION]"), $STR_STRIPLEADING + $STR_STRIPTRAILING)
+   Local $sTextArray = StringSplit($sText, " ")
+
+   Return $sTextArray[2]
+
+   #CS
+   ;Atualiza Planilha com Status
+   local $sUpdate = "UPDATE " & $s_Tablename & " SET [DOC.CRIADO] = '" & $sTextArray[2] & "' where [ID] = '" & $id & "'"
+   $result = $objConnection.Execute($sUpdate)
+   #CE
+
+EndFunc
+
+Func FinalizaFAKE() ;Finaliza a operação
+
+   ; Captura numero do documento de compensação gerado
+   Local $sText = "TESTE 123456"
+   Local $sTextArray = StringSplit($sText, " ")
+
+   Return $sTextArray[2]
+
+EndFunc
+
+Func SendWait($text,$sleep,$repeat=1,$format="%s",$flag=0)
+   for $j = 1 to $repeat
+	  Send(StringFormat($format,$text),$flag)
+	  Sleep($sleep/$repeat)
+   Next
+EndFunc
+
+Func ConfirmaInicio()
+   Local $iAnswer = MsgBox(BitOR($MB_YESNO, $MB_SYSTEMMODAL), $iMsgTitle, "Esse script irá processar os dados da planilha " & $s_Filename & ".  Deseja continuar?")
+   If $iAnswer = 7 Then 	; Verifica se o usuário abortou a operação
+	  _FileWriteLog($hFile, "--- Processo abortado pelo usuário ---")
+	  MsgBox(0, $iMsgTitle, "Processo abortado pelo usuário")
+	  Exit
+   EndIf
+EndFunc
+
+Func CaptureEsc()
+   Switch @HotKeyPressed ; The last hotkey pressed.
+	  Case "{ESC}" ; String is the {ESC} hotkey.
+		 Local $iAnswer = MsgBox(BitOR($MB_YESNO, $MB_SYSTEMMODAL), $iMsgTitle, "Deseja interromper a execução da automação?")
+		 If $iAnswer = 6 Then 	; Verifica se o usuário abortou a operação
+			_FileWriteLog($hFile, "--- Processo abortado pelo usuário ---")
+			MsgBox(0, $iMsgTitle, "Processo abortado pelo usuário")
+			Exit
+		 EndIf
+   EndSwitch
+EndFunc
+

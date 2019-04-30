@@ -1,0 +1,2143 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+
+; CONEXÃO COM ATIS
+#include <IE.au3>
+#include <Excel.au3>
+#include <MsgBoxConstants.au3>
+#include <Array.au3>
+#include <GUIConstantsEx.au3> ; constante para GUI eventos
+#include <EditConstants.au3> ; constante para editar
+#include <File.au3>
+#include <Date.au3>
+#include <WindowsConstants.au3>
+
+
+;Liga a opção de eventos de controle
+Opt("GUIOnEventMode",1)
+
+;Poe no inicio do script <-----------------------
+;Quando pressionar a tecla 'Esc' sai da rotina
+HotKeySet("{Esc}", "CaptureEsc")
+
+;Cria formulário e ativa a a função CloseButton evento fechar do formulário
+Global $hGUI = GUICreate("Acesso Atis", 300, 300)
+GUISetOnEvent($GUI_EVENT_CLOSE, "CLOSEButton")
+
+; pede o usuario que vai acessar o atis - labels
+GUICtrlCreateLabel("Usuário Atis", 10, 10, 250, 40)
+GUICtrlCreateLabel("Senha do Atis", 140, 10, 380, 40)
+
+global $hInputUser = GUICtrlCreateInput("", 10, 25 ,120, 25)
+global $hInputPass = GUICtrlCreateInput("", 140, 25, 120, 25, "35")
+
+; pede o usuario que vai acessar o Benner - labels
+GUICtrlCreateLabel("Usuário Benner", 10, 70, 250, 40)
+GUICtrlCreateLabel("Senha Benner", 140, 70, 380, 40)
+
+global $hInputUserBenner = GUICtrlCreateInput("", 10, 85 ,120, 25)
+global $hInputPassBenner = GUICtrlCreateInput("", 140, 85, 120, 25, "35")
+
+; pede o usuario que vai acessar o CSO - labels
+GUICtrlCreateLabel("Usuário CSO (Com Dígito)", 10, 130, 250, 40)
+GUICtrlCreateLabel("Senha CSO", 140, 130, 380, 40)
+
+global $hInputUserCSO = GUICtrlCreateInput("", 10, 145 ,120, 25)
+global $hInputPassCSO = GUICtrlCreateInput("", 140, 145, 120, 25, "35")
+
+; pede o usuario que vai acessar o WCD - labels
+GUICtrlCreateLabel("Usuário WCD", 10, 190, 250, 40)
+GUICtrlCreateLabel("Senha WCD", 140, 190, 380, 40)
+
+global $hInputUserWcd = GUICtrlCreateInput("", 10, 205 ,120, 25)
+global $hInputPassWcd = GUICtrlCreateInput("", 140, 205, 120, 25, "35")
+
+$hButton = GUICtrlCreateButton("OK", 10, 250, 90, 25)
+GUICtrlSetOnEvent($hButton, "OKButton")
+
+;Exibe Formulário
+GUISetState(@SW_SHOW, $hGUI)
+
+While 1
+	Sleep(10); comando para nao usar muito a CPU
+WEnd
+
+ Func CaptureEsc()
+    Switch @HotKeyPressed ; The last hotkey pressed.
+        Case "{ESC}" ; String is the {ESC} hotkey.
+	  Exit
+    EndSwitch
+ EndFunc
+
+Func CLOSEButton() ; funcao para fechar a janela de usuario e senha
+	Exit
+EndFunc
+
+Func OKButton() ; funcao para fechar a janela de usuario e senha
+
+;~    ;Algoritimo para busca DexPara
+;~    Local $sPath = _PathFull(@ScriptDir) & "\DeParaAtis.xlsx"
+;~    Global $oExcel = ObjCreate("Excel.Application")
+;~    $oExcel.WorkBooks.Open ($sPath)
+;~    $oExcel.visible = true
+;~    ;$oExcel.ScreenUpdating = False
+
+   ;Lê o usuário e senha do sistema digitado pelo usuário
+   Global $sSalvaInputUserCSO = ControlGetText($hGUI, "", "Edit5")
+   Global $sSalvaInputPassCSO = ControlGetText($hGUI, "", "Edit6")
+
+   if Stringlen($sSalvaInputUserCSO) > 0 AND Stringlen($sSalvaInputPassCSO) > 0 Then
+	  Sleep(2000)
+	  ProcessoCSO($sSalvaInputUserCSO,$sSalvaInputPassCSO)
+   endif
+
+    ;Lê o usuário e senha do sistema digitado pelo usuário
+   Global $sSalvaInputUserBenner = ControlGetText($hGUI, "", "Edit3")
+   Global $sSalvaInputPassBenner = ControlGetText($hGUI, "", "Edit4")
+
+   if Stringlen($sSalvaInputUserBenner) > 0 AND Stringlen($sSalvaInputPassBenner) > 0 Then
+	  Sleep(2000)
+	  ProcessoBenner($sSalvaInputUserBenner,$sSalvaInputPassBenner)
+   endif
+
+   ;Lê o usuário e senha do sistema digitado pelo usuário
+   Global $sSalvaInputUserAtis = ControlGetText($hGUI, "", "Edit1")
+   Global $sSalvaInputPassAtis = ControlGetText($hGUI, "", "Edit2")
+
+   if Stringlen($sSalvaInputUserAtis) > 0 AND Stringlen($sSalvaInputPassAtis) > 0 Then
+	  Sleep(2000)
+	  ProcessoAtis($sSalvaInputUserAtis,$sSalvaInputPassAtis)
+   endif
+
+   ;Lê o usuário e senha do sistema digitado pelo usuário
+   Global $sSalvaInputUserWcd = ControlGetText($hGUI, "", "Edit7")
+   Global $sSalvaInputPassWcd = ControlGetText($hGUI, "", "Edit8")
+
+   if Stringlen($sSalvaInputUserWcd) > 0 AND Stringlen($sSalvaInputPassWcd) > 0 Then
+	  Sleep(2000)
+	  ProcessoWcd($sSalvaInputUserWcd,$sSalvaInputPassWcd)
+   endif
+
+;~    $oExcel.WorkBooks($oExcel.WorkBooks.Count).Worksheets("Consolidado").copy
+;~    $oExcel.WorkBooks($oExcel.WorkBooks.Count).Saveas (_PathFull(@ScriptDir) & "\Planilha_Sistema_SGQD_" & _NowCalcDate() & ".xlsx")
+;~    $oExcel.WorkBooks("DeParaAtis.xlsx").close (False)
+
+   MsgBox(0,"Processo SGQD","Dados Gerados Com Sucesso!")
+   Exit
+EndFunc
+
+Func ProcessoAtis($sUsuario,$sSenha)
+
+   ;Algoritimo para busca DexPara
+   Local $sPath = _PathFull(@ScriptDir) & "\DeParaAtis.xlsx"
+   Global $oExcelAtis = ObjCreate("Excel.Application")
+   $oExcelAtis.WorkBooks.Open ($sPath)
+   $oExcelAtis.visible = true
+
+   ;Oculta Formulário
+   GUISetState(@SW_HIDE, $hGUI)
+
+   ;Chama instância do objeto internet explorer
+   Global $oIE = _IECreate()
+
+   ;Acessa o sistema Atis
+   _IENavigate($oIE, "http://atiscrm.telefonica.br:10000/")
+   _IELoadWait($oIE)
+
+   $o_frmLogin = _IEFormGetObjByName($oIE, "formLogin")
+   $o_txt_user = _IEFormElementGetObjByName($o_frmLogin, "user")
+   $o_txt_pwd =  _IEFormElementGetObjByName($o_frmLogin, "password")
+
+   _IEFormElementSetValue($o_txt_user, $sUsuario)
+
+   _IEFormElementSetValue($o_txt_pwd, $sSenha)
+   _IEImgClick($oIE, "imgAceptar", "id")
+   _IELoadWait($oIE)
+
+   Sleep(15000)
+
+   If WinExists("Informações de Segurança") Then
+	  WinActivate("Informações de Segurança")
+	  Send("{Enter}")
+	  Sleep(2000)
+   EndIf
+
+   Send("{Enter}")
+   Sleep(5000)
+
+   Send("{Enter}")
+   Sleep(7000)
+
+   Send("{Enter}")
+   Sleep(5000)
+
+   If WinExists("Sistema ATIS para o perfil T") Then
+	  Local $hwnd = WinActivate("Sistema ATIS para o perfil T")
+	  WinSetState($hwnd,"",@SW_MAXIMIZE)
+	  Local $aClientSize = WinGetClientSize($hWnd)
+	  Sleep(5000)
+	  Send("{Enter}")
+   Else
+	  exit
+   EndIf
+
+   with $oExcelAtis
+
+	  ;Tela 1 - Botão Contatos
+	  local $sht = .WorkBooks(.WorkBooks.Count).Worksheets("DePara_Resolucao")
+	  Local $iPosX = $sht.Range("A:A").find("1" & $aClientSize[0]).offset(0,3).value
+	  Local $iPosY = $sht.Range("A:A").find("1" & $aClientSize[0]).offset(0,4).value
+
+	  WinActivate($hwnd)
+	  MouseMove(Number($iPosX)-50, Number($iPosY)-50)
+	  MouseClick("left")
+	  Send("{Enter}")
+	  Sleep(1000)
+
+	  MouseMove(Number($iPosX), Number($iPosY))
+	  MouseClick("left")
+	  Sleep(500)
+
+	  ;Tela 1 - Botão Processos de Operação
+	  Local $iPosX = $sht.Range("A:A").find("2" & $aClientSize[0]).offset(0,3).value
+	  Local $iPosY = $sht.Range("A:A").find("2" & $aClientSize[0]).offset(0,4).value
+
+	  MouseMove(Number($iPosX), Number($iPosY))
+	  MouseClick("left")
+	  Sleep(500)
+
+	  ;Tela 1 - Botão Getão de Contatos
+	  Local $iPosX = $sht.Range("A:A").find("3" & $aClientSize[0]).offset(0,3).value
+	  Local $iPosY = $sht.Range("A:A").find("3" & $aClientSize[0]).offset(0,4).value
+
+	  MouseMove(Number($iPosX), Number($iPosY))
+	  MouseClick("left")
+	  Sleep(2500)
+
+	  ;If WinExists("Gestionar Contato - GCV0077 - \\Remote") Then
+		 Local $hwnd = WinActivate("Gestionar Contato - GCV0077 - \\Remote")
+
+		 ;Tela GCV077 - Combo Estado
+		 Local $iPosX = $sht.Range("A:A").find("4" & $aClientSize[0]).offset(0,3).value
+		 Local $iPosY = $sht.Range("A:A").find("4" & $aClientSize[0]).offset(0,4).value
+
+		 MouseMove(Number($iPosX), Number($iPosY))
+		 MouseClick("left")
+		 Sleep(700)
+
+		 Send("{Down}")
+		 Send("{Down}")
+		 Send("{Down}")
+		 Send("{Enter}")
+
+		 ;Tela GCV077 - Combo Tipo
+		 Send("{TAB}")
+		 Send("{TAB}")
+		 Send("{TAB}")
+		 Send("{TAB}")
+		 Sleep(500)
+
+		 For $iIndex = 1 to 18
+			Sleep(800)
+			Send("{Down}")
+		 Next
+
+		 Sleep(1000)
+		 Send("{Enter}")
+
+		 ;Tela GCV077 - Combo Motivo
+		 Send("{TAB}")
+
+		 Sleep(450)
+		 Send("{Down}")
+		 Sleep(450)
+		 Send("{Down}")
+		 Sleep(450)
+		 Send("{Down}")
+		 Sleep(450)
+		 Send("{Enter}")
+
+		 ;Tela GCV077 - Botão Pesquisar
+		 Local $iPosX = $sht.Range("A:A").find("5" & $aClientSize[0]).offset(0,3).value
+		 Local $iPosY = $sht.Range("A:A").find("5" & $aClientSize[0]).offset(0,4).value
+
+		 MouseMove(Number($iPosX), Number($iPosY))
+		 MouseClick("left")
+		 Sleep(500)
+
+		 ;Tela RCV0057 Campo Código
+		 Send("350",1)
+
+		 ;Tela RCV0057 Botão Pesquisar
+		 Send("{TAB}")
+		 Send("{Enter}")
+		 Sleep(500)
+
+		 ;Tela RCV0057 Lista de Seleção
+		 Send("{TAB}")
+		 Send("{TAB}")
+
+		 ;Tela RCV0057 Botão Aceitar
+		 Local $iPosX = $sht.Range("A:A").find("6" & $aClientSize[0]).offset(0,3).value
+		 Local $iPosY = $sht.Range("A:A").find("6" & $aClientSize[0]).offset(0,4).value
+
+		 MouseMove(Number($iPosX), Number($iPosY))
+		 MouseClick("left")
+		 Sleep(500)
+
+		 ;Tela GCV077 - Botão Pesquisar
+		 Send("{TAB}")
+		 Send("{TAB}")
+		 Send("{TAB}")
+		 Send("{TAB}")
+		 Send("{Enter}")
+
+		 ;Tela GCV077 - Botão de Paginação
+		 Local $iPosX = $sht.Range("A:A").find("7" & $aClientSize[0]).offset(0,3).value
+		 Local $iPosY = $sht.Range("A:A").find("7" & $aClientSize[0]).offset(0,4).value
+
+
+		 MouseMove(Number($iPosX), Number($iPosY))
+		 for $iIndex = 1 to 12
+			Sleep(500)
+			MouseClick("left")
+		 next
+
+		 ;Tela GCV077 - Campo Qtd de Contatos
+		 Local $iPosX = $sht.Range("A:A").find("8" & $aClientSize[0]).offset(0,3).value
+		 Local $iPosY = $sht.Range("A:A").find("8" & $aClientSize[0]).offset(0,4).value
+		 MouseMove(Number($iPosX), Number($iPosY))
+		 MouseClick("Right")
+		 Sleep(500)
+
+		 ;Tela GCV077 - Campo Qtd de Contatos Copiar
+		 Local $iPosX = $sht.Range("A:A").find("9" & $aClientSize[0]).offset(0,3).value
+		 Local $iPosY = $sht.Range("A:A").find("9" & $aClientSize[0]).offset(0,4).value
+		 MouseMove(Number($iPosX), Number($iPosY))
+		 MouseClick("left")
+		 Sleep(500)
+
+
+		 $sht.Range("N_Linhas").pastespecial format:=xlPasteValues
+		 Local $iReg = $sht.Range("N_Linhas").value
+
+
+		 ;Tela GCV077 - Ativar Lista de Contatos
+		 Local $iPosX = $sht.Range("A:A").find("10" & $aClientSize[0]).offset(0,3).value
+		 Local $iPosY = $sht.Range("A:A").find("10" & $aClientSize[0]).offset(0,4).value
+		 MouseMove(Number($iPosX), Number($iPosY))
+		 MouseClick("left")
+		 Sleep(500)
+
+
+		 for $iIndex = 1 to $iReg
+		 ;for $iIndex = 1 to 1
+
+			;Tela GCV077 - Botão Detalhe
+			Local $iPosX = $sht.Range("A:A").find("11" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("11" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("left")
+			Sleep(1500)
+
+			;Tela GVC0005 - Campo Código (Num Processo)
+			Local $iPosX = $sht.Range("A:A").find("12" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("12" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("Right")
+			;Sleep(100)
+
+			;Tela GVC0005 - Campo Código (Num Processo) Copiar
+			Local $iPosX = $sht.Range("A:A").find("13" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("13" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("left")
+			;Sleep(100)
+
+			local $rng = .WorkBooks(.WorkBooks.Count).Worksheets("Consolidado").cells($iIndex+1,1)
+			$rng.pastespecial format:=xlPasteValues
+
+
+			$rng.offset(0,1).value = "Contato"
+			$rng.offset(0,3).value = "Contato Atis"
+			$rng.offset(0,16).value = "Não"
+			$rng.offset(0,17).value = "Não"
+
+			;Tela GVC0005 - Campo Nome do Cliente
+			Local $iPosX = $sht.Range("A:A").find("14" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("14" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("right")
+			;Sleep(100)
+
+			;Tela GVC0005 - Campo Nome do Cliente Copiar
+			Local $iPosX = $sht.Range("A:A").find("15" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("15" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("left")
+			;Sleep(100)
+
+			$rng.offset(0,6).pastespecial format:=xlPasteValues
+
+
+			;Tela GVC0005 - Campo Data/Hora Inicio
+			Local $iPosX = $sht.Range("A:A").find("16" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("16" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("right")
+			;Sleep(100)
+
+			;Tela GVC0005 - Campo Data/Hora Inicio Copiar
+			Local $iPosX = $sht.Range("A:A").find("17" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("17" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("left")
+			;Sleep(100)
+
+			$sht.Range("dtOriginal").pastespecial format:=xlPasteValues
+			Local $dt = $sht.Range("dtOriginal").value
+			$rng.offset(0,4).value = StringMid($dt,9,2)& "/" & StringMid($dt,6,2) & "/" & _
+									 StringLeft($dt,4) & " " & stringMid($dt,12,2) & ":" & _
+									 StringMid($dt,15,2)& ":" & StringMid($dt,18,2)
+
+			;Tela GVC0005 - Campo Num Doc (CPF 1)
+			Local $iPosX = $sht.Range("A:A").find("18" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("18" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("right")
+			;Sleep(100)
+
+			;Tela GVC0005 - Campo Num Doc (CPF 1) Copiar
+			Local $iPosX = $sht.Range("A:A").find("19" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("19" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("left")
+			;Sleep(100)
+
+			$sht.Range("CPF_1").pastespecial format:=xlPasteValues
+
+			;Tela GVC0005 - Campo Num Doc Dig. (CPF 2)
+			Local $iPosX = $sht.Range("A:A").find("20" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("20" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("right")
+			;Sleep(100)
+
+			;Tela GVC0005 - Campo Num Doc Dig. (CPF 2) Copiar
+			Local $iPosX = $sht.Range("A:A").find("21" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("21" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("left")
+			;Sleep(100)
+
+			$sht.Range("CPF_2").pastespecial format:=xlPasteValues
+
+			$rng.offset(0,7).value = StringFormat($sht.Range("CPF_1").value & $sht.Range("CPF_2").value)
+
+			;Tela GVC0005 - Campo Contato
+			Local $iPosX = $sht.Range("A:A").find("24" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("24" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("right")
+			;Sleep(100)
+
+			;Tela GVC0005 - Campo Contato Copiar
+			Local $iPosX = $sht.Range("A:A").find("25" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("25" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("left")
+			;Sleep(100)
+
+			$rng.offset(0,9).pastespecial format:=xlPasteValues
+
+			;Tela GVC0005 - Campo Situação Comercial
+			Local $iPosX = $sht.Range("A:A").find("32" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("32" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("right")
+			;Sleep(100)
+
+			;Tela GVC0005 - Campo Situação Comercial Copiar
+			Local $iPosX = $sht.Range("A:A").find("33" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("33" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("left")
+			;Sleep(100)
+
+			$rng.offset(0,5).pastespecial format:=xlPasteValues
+
+			;Tela GVC0005 - Guia Observação e Histórico
+			Local $iPosX = $sht.Range("A:A").find("26" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("26" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("left")
+			;Sleep(100)
+
+			;Tela GVC0005 - Observação Cliente (Reclamação)
+			Local $iPosX = $sht.Range("A:A").find("27" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("27" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("right")
+			;Sleep(100)
+
+			;Tela GVC0005 - Observação Cliente (Reclamação) Copiar
+			Local $iPosX = $sht.Range("A:A").find("28" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("28" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("left")
+			;Sleep(100)
+
+			$rng.offset(0,2).pastespecial format:=xlPasteValues
+
+			;Tela GVC0005 - Botão Voltar
+			Local $iPosX = $sht.Range("A:A").find("29" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("29" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("left")
+			;Sleep(100)
+
+			;Tela GCV077 - Navegar seta Pra cima lista de contatos
+			Local $iPosX = $sht.Range("A:A").find("30" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("30" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("left")
+
+			Sleep(500)
+			for $iWind = 1 to $iIndex + 15
+			   Send("{Up}")
+			next
+			Sleep(500)
+
+			;Tela GCV077 - Ativar Lista de Contatos
+			Local $iPosX = $sht.Range("A:A").find("30" & $aClientSize[0]).offset(0,3).value
+			Local $iPosY = $sht.Range("A:A").find("30" & $aClientSize[0]).offset(0,4).value
+			MouseMove(Number($iPosX), Number($iPosY))
+			MouseClick("left")
+			Sleep(300)
+
+			for $iDown = 1 to $iIndex
+			   Send("{Down}")
+			next
+
+		 Next
+
+		  _IEQuit($oIE)
+
+		 $oExcelAtis.WorkBooks($oExcel.WorkBooks.Count).Worksheets("Consolidado").copy
+		 Local $sArqAtis = "Planilha_Sistema_SGQD_Atis" & _NowCalcDate() & ".xlsx"
+		 $oExcelAtis.WorkBooks($oExcel.WorkBooks.Count).Saveas (_PathFull(@ScriptDir) & "\" & $sArqAtis)
+		 $oExcelAtis.WorkBooks("DeParaAtis.xlsx").close (False)
+		 $oExcelAtis.WorkBooks($sArqAtis).close (False)
+	  ;EndIf
+   EndWith
+
+EndFunc
+
+Func ProcessoBenner($sUsuario,$sSenha)
+
+
+Local $sPath = _PathFull(@ScriptDir) & "\DeParaAtis.xlsx"
+Global $oExcelBenner = ObjCreate("Excel.Application")
+$oExcelBenner.WorkBooks.Open ($sPath)
+$oExcelBenner.visible = true
+
+;CONEXÃO COM BENNER
+Global $oIEBenner = _IECreate()
+_IENavigate($oIEBenner, "http://10.20.179.79/juridico/login.aspx")
+_IELoadWait($oIEBenner)
+
+;Ativar os controles da tela para preenchimento de usuário e senha
+$o_FormLogin = _IEFormGetObjByName($oIEBenner, "FormLogin")
+$o_txt_user = _IEFormElementGetObjByName($o_FormLogin, "pu")
+$o_txt_pwd = _IEFormElementGetObjByName($o_FormLogin, "pp")
+
+;Atribuir usuário e senha nos controles da tela
+_IEFormElementSetValue($o_txt_user,$sUsuario)
+_IEFormElementSetValue($o_txt_pwd, $sSenha)
+_IEFormSubmit($o_FormLogin, "Entrar")
+
+;Ativa a janela do Benner
+WinActivate("WEB Juridico Telefonica")
+Local $hWnd = WinWait("WEB Juridico Telefonica", "", 10)
+WinSetState($hWnd, "", @SW_MAXIMIZE)
+
+;Acessando a Página WorkFlow
+local $caminho = "http://10.20.179.79/juridico/pagemain.aspx?g2p=.k.aii.c.a_5.a.k.arlshiaaf.agPnpiK0.cNgWko.c.ansr.cNnrcah90p.lnoFwiMhtep.lrkw.a&ptp=.k1.kWMTESr.bnsaf.bl18g.ar2.ce0oFwMhtes.a.0Dp.a.0.bZFTAF.biMh.mra.ct65p0c5wf.mrlsiaafr20.ce0-.l___RAgdiatesf.a3.cg.c.a0r.aWko.mnsr.ctD0wr.lLw8.a"
+_IENavigate($oIEBenner, $caminho)
+sleep (5000)
+
+;Salvar a página em HTML para trabalhar com o Excel
+WinWaitActive("WEB Juridico Telefonica - Windows Internet Explorer")
+sleep (2000)
+
+MouseClick("left",695,127,1)
+Send("{CTRLDOWN}a{CTRLUP}")
+sleep (1000)
+Send("{CTRLDOWN}c{CTRLUP}")
+
+local $sht = $oExcelBenner.WorkBooks($oExcelBenner.WorkBooks.Count).Worksheets("Benner")
+local $shtReg = $oExcelBenner.WorkBooks($oExcelBenner.WorkBooks.Count).Worksheets("Benner_Reg")
+$sht.Range("A1").PasteSpecial format:=xlPasteValues
+
+local $shtCons = $oExcelBenner.WorkBooks($oExcelBenner.WorkBooks.Count).Worksheets("Consolidado")
+Local $UltLinha = $oExcelBenner.WorksheetFunction.CountA($shtCons.Range("A:A")) + 1
+Local $rngCons = $shtCons.Range("A" & $UltLinha)
+Local $rngBenner = $sht.Range("C21")
+
+local $dtBenner =  convertData(StringMid($rngBenner.value,7,2) & "/" & StringMid($rngBenner.value,5,2) & "/" & _
+				    StringLeft($rngBenner.value,4))
+					;" " & stringMid($dt,12,2) & ":" & _
+					;StringMid($dt,15,2)& ":" & StringMid($dt,18,2)
+
+Local $aParametro = StringSplit(_NowCalcDate(),"/")
+;Local $aParametro = StringSplit(_DateAdd('d',-2,_NowCalcDate()),"/")
+
+if _DateToDayOfWeek($aParametro[1], $aParametro[2], $aParametro[3]) =2 Then
+   $dtParametro = _DateAdd('d',-3,_NowCalcDate())
+Else
+   $dtParametro = _DateAdd('d',-1,_NowCalcDate())
+   ;$dtParametro = _DateAdd('d',-2,_NowCalcDate())
+EndIf
+
+
+;~ local $ContLinha = 0
+Local $iImage = 30
+
+While StringLen($rngBenner.value)>0
+;~    $ContLinha = $ContLinha + 1
+
+   if _DateDiff('d',$dtParametro,$dtBenner) >=0 then
+	  local $dtHrBenner =  StringMid($rngBenner.value,7,2) & "/" & StringMid($rngBenner.value,5,2) & "/" & _
+						   StringLeft($rngBenner.value,4) & _
+						   " " & stringMid($rngBenner.value,9,2) & ":" & _
+						   StringMid($rngBenner.value,11,2)& ":" & StringMid($rngBenner.value,13,2)
+
+	  Local $Corte = StringSplit($rngBenner.offset(0,2).Value, "-")
+	  local $iVar
+	  if $Corte[0] =3 then
+		 $iVar = 3
+	  else
+		 $iVar = 4
+	  EndIf
+
+	  $rngCons.value = StringReplace(StringStripWS(StringMid($Corte[1],StringInStr($Corte[1], "nº"),15), $STR_STRIPLEADING + $STR_STRIPTRAILING), "nº: ", "")
+	  $rngCons.offset(0,4).value = $dtHrBenner
+
+	  $rngCons.offset(0,2).value = StringStripWS(StringLeft($Corte[$iVar], StringLen($Corte[$iVar])), $STR_STRIPLEADING + $STR_STRIPTRAILING)
+
+	  $rngCons.offset(0,1).value = "JURIDICO"
+	  $rngCons.offset(0,3).value = "JURIDICO"
+	  $rngCons.offset(0,15).value = StringReplace(StringStripWS(StringLeft($Corte[2], StringLen($Corte[2])), $STR_STRIPLEADING + $STR_STRIPTRAILING),":","")
+	  $rngCons.offset(0,16).value = "Não"
+	  $rngCons.offset(0,17).value = "Não"
+
+	  while $sht.Shapes("Picture " & $iImage).AlternativeText <> "Ver"
+		 $iImage = $iImage + 1
+	  WEnd
+
+	  Global $oIEBennerReg = _IECreate()
+	  $Caminho = $sht.Shapes("Picture " & $iImage).Hyperlink.Address
+	  _IENavigate($oIEBennerReg, $caminho)
+
+	  ;Salvar a página em HTML para trabalhar com o Excel
+	  WinActivate ("WEB Juridico Telefonica")
+	  Sleep(500)
+
+	  Send("{CTRLDOWN}a{CTRLUP}")
+	  sleep (500)
+	  Send("{CTRLDOWN}c{CTRLUP}")
+
+	  $shtReg.Cells().delete
+	  $shtReg.Range("A1").PasteSpecial format:=xlPasteValues
+	  sleep (500)
+
+	  $rngCons.offset(0,6).value = $shtReg.Range("B25").value
+	  $rngCons.offset(0,7).value = $shtReg.Range("D25").value
+
+	  $rngBenner = $rngBenner.offset(1,0)
+	  $rngCons = $rngCons.offset(1,0)
+
+	  local $dtBenner = convertData(StringMid($rngBenner.value,7,2) & "/" & StringMid($rngBenner.value,5,2) & "/" & _
+						StringLeft($rngBenner.value,4))
+
+	  _IEQuit($oIEBennerReg)
+	  $iImage = $iImage + 3
+
+   Else
+	  ExitLoop
+   EndIf
+WEnd
+
+_IEQuit($oIEBenner)
+$oExcelBenner.WorkBooks($oExcelBenner.WorkBooks.Count).Worksheets("Consolidado").copy
+Local $sArqAtis = "Planilha_Sistema_SGQD_Benner" & _NowCalcDate() & ".xlsx"
+$oExcelBenner.WorkBooks($oExcelBenner.WorkBooks.Count).Saveas (_PathFull(@ScriptDir) & "\" & $sArqAtis)
+$oExcelBenner.WorkBooks("DeParaAtis.xlsx").close (False)
+$oExcelBenner.WorkBooks($sArqAtis).close (False)
+;~ Return 0
+
+EndFunc
+
+Func iif($cond, $res_true, $res_false)
+    If $cond Then
+        Return $res_true
+    Else
+        Return $res_false
+    EndIf
+ EndFunc
+
+Func ProcessoCSO($sUsuario,$sSenha)
+
+If WinExists("pw3270") Then
+
+;Processo para busca dos registros PASC
+;========================================
+
+   Local $sPath = _PathFull(@ScriptDir) & "\DeParaAtis.xlsx"
+   Global $oExcelCSO = ObjCreate("Excel.Application")
+   $oExcelCSO.WorkBooks.Open ($sPath)
+   $oExcelCSO.visible = true
+
+   ;Preenchimento tela Login e Senha
+   ;--------------------------------
+   WinActivate("pw3270")
+   Send(StringLeft($sUsuario,7),1)
+   Send("{TAB}")
+   Send($sSenha,1)
+   Send("{ENTER}")
+   ;--------------------------------
+
+   ;Preenchimento tela 1 - acesso aos registros PASC
+   ;------------------------------------------------
+   Send("A0",1)
+   Send("{ENTER}")
+   ;------------------------------------------------
+
+   ;Preenchimento da transacao Pasc
+   ;------------------------------------------------
+   Send("{PAUSE}")
+   Sleep(1000)
+   Send("PASC",1)
+   Send("{ENTER}")
+   Sleep(2500)
+   ;------------------------------------------------
+
+   ;Paramentros da Transacao Pasc
+   ;------------------------------------------------
+   Send("CONS",1)
+   Send("{TAB}")
+   Send("08",1)
+   Send("{ENTER}")
+   Sleep(1000)
+   Send("07",1)
+   Send("x",1)
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("SFR",1)
+   Send("{TAB}")
+   Send("99",1)
+   Send("x",1)
+   Sleep(1000)
+   Send("{ENTER}")
+   ;------------------------------------------------
+
+   ;Copia da Tela com números de registros
+   ;--------------------------------------
+   Sleep(5000)
+   ;Send("{PAUSE}")
+   Sleep(500)
+   WinActivate("pw3270")
+   ;ControlClick("pw3270", "", "gdkWindowChild31") ;Citrix
+   Send("{CTRLDOWN}a{CTRLUP}")
+   Sleep(500)
+   Send("{CTRLDOWN}c{CTRLUP}")
+   Sleep(1000)
+   ;--------------------------------------
+
+   ;Chamada Note Pad, colar tela e salvar
+   ;---------------------------------------------------------------------
+   ; Run Notepad
+   Run("notepad.exe")
+   Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+   WinActivate($hWnd)
+   Send("{CTRLDOWN}v{CTRLUP}")
+   Send("{CTRLDOWN}s{CTRLUP}")
+
+   Sleep(1000)
+   $sFilePath = _PathFull(@ScriptDir) & "\Arquivos\Pasc_ValidaReg.txt"
+   WinActivate("Save As")
+   ControlSetText("Save As", "", "Edit1",$sFilePath)
+   ControlClick("Save As", "", "Button1") ;Citrix
+
+   ;Send($sFilePath,1)
+   ;Sleep(1000)
+   ;Send("!s") ;Citrix
+   ;Send("!l")
+   Sleep(1000)
+   WinClose($hWnd)
+   WinActivate("pw3270")
+   Sleep(2000)
+   ;----------------------------------------------------------------------
+
+   ;Chamada do arquivo salvo para validação da quantidade de registros
+   ;----------------------------------------------------------------------
+   Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+   Local $sFileRead  = FileReadLine($hFileOpen, 8)
+   local $iRegistros = StringMid($sFileRead,19,2)
+   FileDelete($sFilePath)
+   ;----------------------------------------------------------------------
+
+   ;Acesso aos registros
+   ;----------------------
+   WinActivate("pw3270")
+   Send("x",1)
+   Send("{ENTER}")
+   Sleep(2000)
+   ;----------------------
+
+   ;Copia da tela inicial dos registros para validação da quantidade de paginas a serem acessadas
+   ;---------------------------------------------------------------------------------------------
+   ;Send("{PAUSE}")
+   WinActivate("pw3270")
+   ControlClick("pw3270", "", "gdkWindowChild31") ;Citrix
+   Send("{CTRLDOWN}a{CTRLUP}")
+   Sleep(500)
+   Send("{CTRLDOWN}c{CTRLUP}")
+   Sleep(1000)
+   ;----------------------------------------------------------------------------------------------
+
+   ;Chamada Note Pad, colar tela e salvar
+   ;---------------------------------------------------------------------
+   ; Run Notepad
+   Run("notepad.exe")
+   Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+   WinActivate($hWnd)
+   Send("{CTRLDOWN}v{CTRLUP}")
+   Send("{CTRLDOWN}s{CTRLUP}")
+   Sleep(1000)
+   $sFilePath = _PathFull(@ScriptDir) & "\Arquivos\Pasc_ValidaRegPag.txt"
+   WinActivate("Save As")
+   ControlSetText("Save As", "", "Edit1",$sFilePath)
+   ControlClick("Save As", "", "Button1") ;Citrix
+   ;Send($sFilePath,1)
+   ;Sleep(1000)
+   ;Send("!s") ;Citrix
+   ;Send("!l")
+   Sleep(1000)
+   WinClose($hWnd)
+   ;----------------------------------------------------------------------
+
+   ;Acesso ao registro salva para validação do número de páginas
+   ;----------------------------------------------------------------------
+   WinActivate("pw3270")
+   Sleep(2000)
+   Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+   Local $sFileRead  = FileReadLine($hFileOpen, 3)
+   local $iPaginas = StringMid($sFileRead,78,4)
+   FileDelete($sFilePath)
+   ;-----------------------------------------------------------------------
+
+   ;Chamada da Função que salva os registros
+   ;----------------------------------------------------
+   CopiaRegistros(Number($iPaginas),Number($iRegistros),"PASC")
+   ;----------------------------------------------------
+
+;Processo para busca dos registros POMB
+;========================================================================
+
+   ;Reinicia a tela de a chamada da nova transação (botão PA2)
+   ;----------------------------------------------
+   Send("{PAUSE}")
+   Sleep(1000)
+   ;ControlClick("pw3270", "", "gdkWindowChild24")
+   ControlClick("pw3270", "", "gdkWindowChild26") ;Citrix
+   Sleep(1000)
+   ;----------------------------------------------
+
+   ;Inicia transação POMB
+   ;---------------------
+   Send("POMB",1)
+   Send("{ENTER}")
+   ;---------------------
+
+   ;Parâmetros transação POMB
+   ;-------------------------
+   Send("cons",1)
+   Send("{TAB}")
+   Send("08",1)
+   Send("{ENTER}")
+   Send("07",1)
+   Send("x",1)
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("COBRAN",1)
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("99",1)
+   Send("x",1)
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("x",1)
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("01010001",1)
+   Send("{ENTER}")
+   ;------------------------
+
+   ;copia da tela onde possui a quantidade de registros
+   ;---------------------------------------------------
+   Sleep(5000)
+   ;Send("{PAUSE}")
+   ;Sleep(500)
+   WinActivate("pw3270")
+   ControlClick("pw3270", "", "gdkWindowChild31") ;Citrix
+   Send("{CTRLDOWN}a{CTRLUP}")
+   Sleep(500)
+   Send("{CTRLDOWN}c{CTRLUP}")
+   Sleep(1000)
+   ;---------------------------------------------------
+
+   ;Chamada Note Pad, colar tela e salvar
+   ;--------------------------------------------------------------------
+   ; Run Notepad
+   Run("notepad.exe")
+   Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+   WinActivate($hWnd)
+   Send("{CTRLDOWN}v{CTRLUP}")
+   Send("{CTRLDOWN}s{CTRLUP}")
+   Sleep(1000)
+   $sFilePath = _PathFull(@ScriptDir) & "\Arquivos\Pomb_ValidaReg.txt"
+   WinActivate("Save As")
+   ControlSetText("Save As", "", "Edit1",$sFilePath)
+   ControlClick("Save As", "", "Button1") ;Citrix
+   ;Send($sFilePath,1)
+   ;Sleep(1000)
+   ;Send("!s") ;Citrix
+   ;Send("!l")
+   Sleep(1000)
+   WinClose($hWnd)
+   WinActivate("pw3270")
+   Sleep(2000)
+   ;--------------------------------------------------------------------
+
+   ;Validação do Número de registros
+   ;--------------------------------------------------------------------
+   Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+   Local $sFileRead  = FileReadLine($hFileOpen, 8)
+   local $iRegistros = StringMid($sFileRead,18,3)
+   FileDelete($sFilePath)
+   ;--------------------------------------------------------------------
+
+   ;Acesso aos registros
+   ;----------------------
+   WinActivate("pw3270")
+   Send("x",1)
+   Send("{ENTER}")
+   Sleep(2000)
+   ;----------------------
+
+   ;copia da tela onde possui a quantidade de páginas
+   ;---------------------------------------------------
+   ;Send("{PAUSE}")
+   ;Sleep(500)
+   WinActivate("pw3270")
+   ControlClick("pw3270", "", "gdkWindowChild31") ;Citrix
+   Send("{CTRLDOWN}a{CTRLUP}")
+   Sleep(500)
+   Send("{CTRLDOWN}c{CTRLUP}")
+   Sleep(1000)
+   ;---------------------------------------------------
+
+   ;Chamada Note Pad, colar tela e salvar
+   ;---------------------------------------------------------------------
+   ; Run Notepad
+   Run("notepad.exe")
+   Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+   WinActivate($hWnd)
+   Send("{CTRLDOWN}v{CTRLUP}")
+   Send("{CTRLDOWN}s{CTRLUP}")
+   Sleep(1000)
+   $sFilePath = _PathFull(@ScriptDir) & "\Arquivos\Pomb_ValidaRegPag.txt"
+   ;Send($sFilePath,1)
+   ;Sleep(1000)
+   ;Send("!s") ;Citrix
+   ;Send("!l")
+   WinActivate("Save As")
+   ControlSetText("Save As", "", "Edit1",$sFilePath)
+   ControlClick("Save As", "", "Button1") ;Citrix
+   Sleep(1000)
+   WinClose($hWnd)
+   WinActivate("pw3270")
+   Sleep(2000)
+   ;----------------------------------------------------------------------
+
+   ;Acesso ao registro salva para validação do número de páginas
+   ;----------------------------------------------------------------------
+   Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+   Local $sFileRead  = FileReadLine($hFileOpen, 3)
+   local $iPaginas = StringMid($sFileRead,78,4)
+   FileDelete($sFilePath)
+   ;----------------------------------------------------------------------
+
+   ;Chamada da função para salvar os registros POMB
+   ;----------------------------------------------------
+   CopiaRegistros(Number($iPaginas),Number($iRegistros),"POMB")
+   ;----------------------------------------------------
+
+   ;copia da tela onde possui a quantidade de registros
+   ;---------------------------------------------------
+   WinActivate("pw3270")
+   send("{F2}")
+   Sleep(1000)
+   ;Send("{PAUSE}")
+   ;Sleep(1000)
+   ControlClick("pw3270", "", "gdkWindowChild31") ;Citrix
+   Send("{CTRLDOWN}a{CTRLUP}")
+   Sleep(500)
+   Send("{CTRLDOWN}c{CTRLUP}")
+   Sleep(1000)
+   ;---------------------------------------------------
+
+   ;Chamada Note Pad, colar tela e salvar
+   ;--------------------------------------------------------------------
+   ; Run Notepad
+   Run("notepad.exe")
+   Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+   WinActivate($hWnd)
+   Send("{CTRLDOWN}v{CTRLUP}")
+   Send("{CTRLDOWN}s{CTRLUP}")
+   Sleep(1000)
+   $sFilePath = _PathFull(@ScriptDir) & "\Arquivos\Pomb_Valida_Reg_Reitirado.txt"
+   ;Send($sFilePath,1)
+   ;Sleep(1000)
+   ;Send("!s") ;Citrix
+   ;Send("!l")
+   WinActivate("Save As")
+   ControlSetText("Save As", "", "Edit1",$sFilePath)
+   ControlClick("Save As", "", "Button1") ;Citrix
+   Sleep(1000)
+   WinClose($hWnd)
+   WinActivate("pw3270")
+   Sleep(2000)
+   ;--------------------------------------------------------------------
+
+   ;Validação do Número de registros
+   ;--------------------------------------------------------------------
+   Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+   Local $sFileRead  = FileReadLine($hFileOpen, 8)
+   Local $iRegistros = StringStripWS(StringMid($sFileRead,30,2),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+   FileDelete($sFilePath)
+   ;--------------------------------------------------------------------
+
+   if number($iRegistros) > 0 then
+	  Send("{PAUSE}")
+	  WinActivate("pw3270")
+	  Send("{TAB}")
+	  Send("x",1)
+	  Send("{ENTER}")
+	  Sleep(500)
+
+	  ;Copia Tela para Validação de números de páginas
+	  ;-----------------------------------------------
+	  ;Send("{PAUSE}")
+	  Sleep(500)
+	  WinActivate("pw3270")
+	  ControlClick("pw3270", "", "gdkWindowChild31") ;Citrix
+	  Send("{CTRLDOWN}a{CTRLUP}")
+	  Sleep(500)
+	  Send("{CTRLDOWN}c{CTRLUP}")
+	  Sleep(1000)
+	  ;-----------------------------------------------
+
+	  ;Chamada Note Pad, colar tela e salvar
+	  ;---------------------------------------------------------------------
+	  ; Run Notepad
+	  Run("notepad.exe")
+	  Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+	  WinActivate($hWnd)
+	  Send("{CTRLDOWN}v{CTRLUP}")
+	  Send("{CTRLDOWN}s{CTRLUP}")
+	  Sleep(1000)
+	  $sFilePath = _PathFull(@ScriptDir) & "\Arquivos\Pomb_Valida_Paginas_Reitirado.txt"
+	  ;Send($sFilePath,1)
+	  ;Sleep(1000)
+	  ;Send("!s") ;Citrix
+	  ;Send("!l")
+	  WinActivate("Save As")
+      ControlSetText("Save As", "", "Edit1",$sFilePath)
+      ControlClick("Save As", "", "Button1") ;Citrix
+	  Sleep(1000)
+	  WinClose($hWnd)
+	  WinActivate("pw3270")
+	  Sleep(2000)
+	  ;----------------------------------------------------------------------
+
+	  ;Acesso ao registro salva para validação do número de páginas
+	  ;----------------------------------------------------------------------
+	  Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+	  Local $sFileRead  = FileReadLine($hFileOpen, 3)
+	  local $iPaginas = StringMid($sFileRead,78,4)
+	  FileDelete($sFilePath)
+
+	  ;Chamada da função para salvar os registros POMB Reiterados
+	  ;----------------------------------------------------
+	  CopiaRegistros(Number($iPaginas),Number($iRegistros),"Reiterado_POMB")
+	  ;----------------------------------------------------
+   endif
+
+;Processo para busca dos registros PACC
+;========================================================================
+
+   ;Reinicia a tela de a chamada da nova transação (botão PA2)
+   ;----------------------------------------------
+   Send("{PAUSE}")
+   Sleep(1000)
+   ControlClick("pw3270", "", "gdkWindowChild26");Citrix
+   ;ControlClick("pw3270", "", "gdkWindowChild24")
+   Sleep(1000)
+   ;----------------------------------------------
+
+   ;Inicia transação PACC
+   ;---------------------
+   Send("PACC",1)
+   Send("{ENTER}")
+   ;---------------------
+
+   ;Acesso a primeira tela
+   ;---------------------
+   Send("04",1)
+   Send("{ENTER}")
+   ;---------------------
+
+   ;Parâmetros para acesso a tela de registros
+   ;------------------------------------------
+   Send("05",1)
+   Send("SFR",1)
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("99",1)
+   Send("{ENTER}")
+   Sleep(1000)
+   ;------------------------------------------
+
+   ;copia da tela onde possui a quantidade de registros
+   ;---------------------------------------------------
+   WinActivate("pw3270")
+   ControlClick("pw3270", "", "gdkWindowChild33")
+   ;Send("{PAUSE}")
+   Sleep(500)
+   ControlClick("pw3270", "", "gdkWindowChild31") ;Citrix
+   Send("{CTRLDOWN}a{CTRLUP}")
+   Sleep(500)
+   Send("{CTRLDOWN}c{CTRLUP}")
+   Sleep(1000)
+   ;---------------------------------------------------
+
+   ;Chamada Note Pad, colar tela e salvar
+   ;--------------------------------------------------------------------
+   ; Run Notepad
+   Run("notepad.exe")
+   Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+   WinActivate($hWnd)
+   Send("{CTRLDOWN}v{CTRLUP}")
+   Send("{CTRLDOWN}s{CTRLUP}")
+   Sleep(1000)
+   $sFilePath = _PathFull(@ScriptDir) & "\Arquivos\PACC_Valida_Pagina.txt"
+   ;Send($sFilePath,1)
+   ;Sleep(1000)
+   ;Send("!s") ;Citrix
+   ;Send("!l")
+   WinActivate("Save As")
+   ControlSetText("Save As", "", "Edit1",$sFilePath)
+   ControlClick("Save As", "", "Button1") ;Citrix
+   Sleep(1000)
+   WinClose($hWnd)
+   WinActivate("pw3270")
+   Sleep(2000)
+   ;--------------------------------------------------------------------
+
+   ;Acesso ao registro salva para validação do número de páginas
+   ;----------------------------------------------------------------------
+   Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+   Local $sFileRead  = FileReadLine($hFileOpen, 24)
+   local $sValida = StringMid($sFileRead,5,6)
+
+
+   Local $sFileRead  = FileReadLine($hFileOpen, 3)
+   Local $iPaginas = StringMid($sFileRead,77,3)
+   FileDelete($sFilePath)
+
+   $iNumReg = 1
+   for $iPag = 1 to $iPaginas
+
+	  ;copia da tela onde possui a quantidade de registros
+	  ;---------------------------------------------------
+	  WinActivate("pw3270")
+	  ;Send("{PAUSE}")
+	  Sleep(1000)
+	  ControlClick("pw3270", "", "gdkWindowChild31") ;Citrix
+	  Send("{CTRLDOWN}a{CTRLUP}")
+	  Sleep(500)
+	  Send("{CTRLDOWN}c{CTRLUP}")
+	  Sleep(1000)
+	  ;---------------------------------------------------
+
+	  ;Chamada Note Pad, colar tela e salvar
+	  ;--------------------------------------------------------------------
+	  ; Run Notepad
+	  Run("notepad.exe")
+	  Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+	  WinActivate($hWnd)
+	  Send("{CTRLDOWN}v{CTRLUP}")
+	  Send("{CTRLDOWN}s{CTRLUP}")
+	  Sleep(1000)
+	  $sFilePath = _PathFull(@ScriptDir) & "\Arquivos\PACC_Valida_Reg_" & $iPag & ".txt"
+	  ;Send($sFilePath,1)
+	  ;Sleep(1000)
+	  ;Send("!s") ;Citrix
+	  ;Send("!l")
+	  WinActivate("Save As")
+	  ControlSetText("Save As", "", "Edit1",$sFilePath)
+	  ControlClick("Save As", "", "Button1") ;Citrix
+	  Sleep(1000)
+	  WinClose($hWnd)
+	  WinActivate("pw3270")
+	  Sleep(2000)
+	  ;--------------------------------------------------------------------
+
+	  ;Valida o número de Registros
+	  ;---------------------------------------------------------------------
+	  $iReg = 0
+	  for $i = 10 to 21
+		 Local $sFileRead  = FileReadLine($hFileOpen, $i)
+		 if stringlen(StringStripWS($sFileRead,$STR_STRIPLEADING + $STR_STRIPTRAILING)) > 0 Then
+		   $iReg = $iReg + 1
+		 endif
+	  Next
+	  ;---------------------------------------------------------------------
+
+	  for $iRegistros = 1 to $iReg
+		 WinActivate("pw3270")
+		 Send("x",1)
+		 Send("{ENTER}")
+
+		 ;Send("{PAUSE}")
+		 ;ControlClick("pw3270", "", "gdkWindowChild31")
+		 Sleep(1500)
+		 WinActivate("pw3270")
+		 ControlClick("pw3270", "", "gdkWindowChild31") ;Citrix
+		 Send("{CTRLDOWN}a{CTRLUP}")
+		 Sleep(500)
+		 Send("{CTRLDOWN}c{CTRLUP}")
+		 Sleep(1000)
+
+		 ;Run Notepad
+		 Run("notepad.exe")
+		 Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+		 WinActivate($hWnd)
+
+		 Send("{CTRLDOWN}v{CTRLUP}")
+		 Send("{ENTER}")
+		 sleep(1000)
+		 Send("{CTRLDOWN}s{CTRLUP}")
+		 Sleep(1000)
+		 Local $sArquivo = _PathFull(@ScriptDir) & "\Arquivos\PACC_Registro_" & $iNumReg & ".txt"
+		 ;Send($sArquivo,1)
+		 ;Send("!s") ;Citrix
+		 ;Send("!l")
+		 WinActivate("Save As")
+		 ControlSetText("Save As", "", "Edit1",$sArquivo)
+		 ControlClick("Save As", "", "Button1") ;Citrix
+		 Sleep(1000)
+		 WinClose($hWnd)
+		 Sleep(1000)
+
+		 WinActivate("pw3270")
+		 Send("{F2}")
+
+		 Sleep(1000)
+		 if $iRegistros < 12 then
+		   for $i = 1 To $iRegistros
+			  Sleep(500)
+			  Send("{Down}")
+		   next
+		 EndIf
+		 $iNumReg = $iNumReg + 1
+	  next
+	  send("{F8}")
+   next
+   FileDelete($sFilePath)
+
+
+;Processo para busca dos registros BC
+;========================================================================
+;ControlClick("pw3270", "", "gdkWindowChild28");Citrix
+
+;ControlClick("pw3270", "", "gdkWindowChild24")
+ControlClick("pw3270", "", "gdkWindowChild26")
+Sleep(500)
+Send("{PAUSE}")
+Sleep(500)
+;ControlClick("pw3270", "", "gdkWindowChild23")
+ControlClick("pw3270", "", "gdkWindowChild25")
+Sleep(500)
+Send("{PAUSE}")
+Sleep(500)
+Send("c0{ENTER}")
+Sleep(500)
+Send("{PAUSE}")
+Sleep(500)
+WinActivate("pw3270")
+Send("O010",1)
+Send("{ENTER}")
+Sleep(500)
+
+Send("4O",1)
+
+Send("{TAB}")
+Send("11000",1)
+Send(StringRight($sUsuario,7),1)
+Send("BCP1F",1)
+Send("{TAB}")
+
+local $varES[3]
+$varES[0] = "VM"
+$varES[1] = "CO"
+$varES[2] = "CA"
+
+$iNumReg = 1
+for $iBC = 0 to Ubound($varES)-1
+
+   Send($varES[$iBC],1)
+   Send("{ENTER}")
+
+   ;Send("{PAUSE}")
+   Sleep(1000)
+   WinActivate("pw3270")
+   ControlClick("pw3270", "", "gdkWindowChild33")
+   Sleep(500)
+   Send("{CTRLDOWN}a{CTRLUP}")
+   Sleep(500)
+   Send("{CTRLDOWN}c{CTRLUP}")
+   Sleep(1000)
+
+   ;Run Notepad
+   Run("notepad.exe")
+   Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+   WinActivate($hWnd)
+   Send("{CTRLDOWN}v{CTRLUP}")
+   sleep(1000)
+   Send("{CTRLDOWN}s{CTRLUP}")
+   Sleep(1000)
+   Local $sArquivo = _PathFull(@ScriptDir) & "\Arquivos\BC_" & $varES[$iBC] & "Valida_Pag.txt"
+   ;Send($sArquivo,1)
+   ;Send("!s") ;Citrix
+   ;Send("!l")
+   WinActivate("Save As")
+   ControlSetText("Save As", "", "Edit1",$sArquivo)
+   ControlClick("Save As", "", "Button1") ;Citrix
+   Sleep(1000)
+   WinClose($hWnd)
+   Sleep(1000)
+
+   ;Acesso ao registro salva para validação do número de páginas
+   ;----------------------------------------------------------------------
+   Local $hFileOpen  = FileOpen($sArquivo, $FO_READ)
+   Local $sFileRead  = FileReadLine($hFileOpen, 1)
+   local $iPag = StringMid($sFileRead,77,3)
+   FileDelete($sArquivo)
+
+   for $iPaginas = 1 to $iPag
+
+	  ;Send("{PAUSE}")
+	  Sleep(1000)
+	  WinActivate("pw3270")
+	  ControlClick("pw3270", "", "gdkWindowChild33")
+	  Sleep(500)
+	  Send("{CTRLDOWN}a{CTRLUP}")
+	  Sleep(500)
+	  Send("{CTRLDOWN}c{CTRLUP}")
+	  Sleep(1000)
+
+	  ;Run Notepad
+	  Run("notepad.exe")
+	  Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+	  WinActivate($hWnd)
+	  Send("{CTRLDOWN}v{CTRLUP}")
+	  sleep(1000)
+	  Send("{CTRLDOWN}s{CTRLUP}")
+	  Sleep(1000)
+	  Local $sArquivoValida = _PathFull(@ScriptDir) & "\Arquivos\BC_" & $varES[$iBC] & $iPaginas & "Valida_Reg.txt"
+	  ;Send($sArquivoValida,1)
+	  ;Send("!s") ;Citrix
+	  ;Send("!l")
+	  WinActivate("Save As")
+	  ControlSetText("Save As", "", "Edit1",$sArquivoValida)
+	  ControlClick("Save As", "", "Button1") ;Citrix
+	  Sleep(1000)
+	  WinClose($hWnd)
+	  Sleep(1000)
+
+	  $iCountTab = 1
+	  Local $hFileOpen  = FileOpen($sArquivoValida, $FO_READ)
+	  for $i = 4 to 22
+		 Local $sFileRead  = FileReadLine($hFileOpen, $i)
+		 if stringlen(StringStripWS($sFileRead,$STR_STRIPLEADING + $STR_STRIPTRAILING)) > 0 Then
+		   if StringMid($sFileRead,58,5) = "VIDEO" then
+			   WinActivate("pw3270")
+			   Send("x",1)
+			   Sleep(1000)
+			   Send("{F1}")
+			   Sleep(1000)
+			   WinActivate("pw3270")
+			   ControlClick("pw3270", "", "gdkWindowChild33")
+			   Sleep(1000)
+			   Send("{CTRLDOWN}a{CTRLUP}")
+			   Sleep(500)
+			   Send("{CTRLDOWN}c{CTRLUP}")
+			   Sleep(2500)
+
+			   ;Run Notepad
+			   Run("notepad.exe")
+			   Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+			   WinActivate($hWnd)
+			   Send("{CTRLDOWN}v{CTRLUP}")
+			   sleep(1000)
+			   Send("{CTRLDOWN}s{CTRLUP}")
+			   Sleep(1000)
+			   Local $sArquivo = _PathFull(@ScriptDir) & "\Arquivos\BC_" & $varES[$iBC] & "_Registro_" & $iNumReg & ".txt"
+			   ;Send($sArquivo,1)
+			   ;Send("!s") ;Citrix
+			   ;Send("!l")
+			   WinActivate("Save As")
+			   ControlSetText("Save As", "", "Edit1",$sArquivo)
+			   ControlClick("Save As", "", "Button1") ;Citrix
+			   Sleep(1000)
+			   WinClose($hWnd)
+			   WinActivate("pw3270")
+			   Sleep(1000)
+			   Send("{F4}")
+			   Sleep(1000)
+			   if $iPaginas > 1 Then
+				  for $iPaginacao = 1 to $iPaginas-1
+					 Send("{ENTER}")
+				  Next
+			   EndIf
+			   for $iTab = 1 to $iCountTab
+				  Send("{TAB}")
+			   next
+			   $iNumReg = $iNumReg + 1
+			Else
+			   Send("{DOWN}")
+			endif
+			$iCountTab = $iCountTab + 1
+		endif
+
+	 Next
+	 FileDelete($sArquivoValida)
+	 Send("{ENTER}")
+   Next
+   Send("{PAUSE}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+   Send("{TAB}")
+next
+
+   Send("{PAUSE}")
+   Sleep(1000)
+   Send("{PAUSE}")
+
+   Consolidar()
+
+   $oExcelCSO.WorkBooks($oExcelCSO.WorkBooks.Count).Worksheets("Consolidado").copy
+   Local $sArqAtis = "Planilha_Sistema_SGQD_CSO" & _NowCalcDate() & ".xlsx"
+   $oExcelCSO.WorkBooks($oExcelCSO.WorkBooks.Count).Saveas (_PathFull(@ScriptDir) & "\" & $sArqAtis)
+   $oExcelCSO.WorkBooks("DeParaAtis.xlsx").close (False)
+   $oExcelCSO.WorkBooks($sArqAtis).close (False)
+
+Else
+   exit
+EndIf
+
+EndFunc
+Func returnFindFiles($sFolder,$sFind)
+    ; List all the files and folders in the desktop directory using the default parameters and return the full path.
+	Local $sPath = _PathFull(@ScriptDir ) & "\" & $sFolder
+
+    Local $aFileList = _FileListToArray($sPath,$sFind, $FLTA_FILES)
+
+	Return $aFileList
+
+EndFunc   ;==>returnFindFiles
+Func Consolidar()
+
+   ;Algoritimo para busca DexPara
+  ;Global $oExcel = ObjCreate("Excel.Application")
+   ;Local $sPath = _PathFull(@ScriptDir) & "\DeParaAtis.xlsx"
+   ;$oExcel.WorkBooks.Open ($sPath)
+   ;$oExcel.visible = true
+   local $sht = $oExcel.WorkBooks($oExcel.WorkBooks.Count).Worksheets("Consolidado")
+
+   if stringLen($sht.Range("A2").value) > 0 then
+	  $iCountLine = $oExcel.WorksheetFunction.CountA($sht.Range("A:A"))
+	  local $rng = $sht.Cells($iCountLine+1,1)
+   else
+	  local $rng = $sht.Range("A2")
+   endif
+
+   Local $aListArquivos = returnFindFiles("Arquivos","*Registro*.txt")
+   For $iArq = 1 to Number($aListArquivos[0])
+	  Local $sEndArquivo = _PathFull(@ScriptDir) & "\Arquivos\" & $aListArquivos[$iArq]
+	  Local $hFileOpen = FileOpen($sEndArquivo, $FO_READ)
+
+	  if StringLeft($aListArquivos[$iArq],4) = "PASC" Then
+
+		 local $line = FileReadLine($hFileOpen,3)
+		 $rng.value =  StringStripWS(StringMid($line,13,13),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 $rng.offset(0,1).value = "PASC"
+		 $rng.offset(0,3).value = "PROCESSOS ESPECIAIS"
+		 $rng.offset(0,16).value = "Não"
+		 $rng.offset(0,4).value = StringMid($line,44,10) & " 00:00:00"
+
+		 ;Nome do Cliente
+		 local $line = FileReadLine($hFileOpen,12)
+		 if StringStripWS(StringLen(StringMid($line,36,45)),$STR_STRIPLEADING + $STR_STRIPTRAILING) > 0 then
+			$rng.offset(0,6).value = StringStripWS(StringMid($line,36,45),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 Else
+			local $line = FileReadLine($hFileOpen,5)
+			$rng.offset(0,6).value = StringStripWS(StringMid($line,15,66),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 endif
+
+		 ;Terminal de Contato
+		 local $line = FileReadLine($hFileOpen,6)
+		 $rng.offset(0,9).value = StringMid($line,12,12)
+
+		 ;Terminal Reclamado
+		 local $line = FileReadLine($hFileOpen,12)
+		 $rng.offset(0,8).value = StringMid($line,12,12)
+
+		 ;CNL
+		 local $line = FileReadLine($hFileOpen,17)
+		 $rng.offset(0,11).value = StringMid($line,31,5)
+
+		 $sReclamacao = ""
+		 For $i = 7 to 11
+			local $line = FileReadLine($hFileOpen,$i)
+			;$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,11,StringLen($line)-10),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+			$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,11,70),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 Next
+
+		 For $i = 17 to 22
+			local $line = FileReadLine($hFileOpen,$i)
+			;$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,2,StringLen($line)-1),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+			$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,11,70),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 Next
+
+	  ElseIf StringLeft($aListArquivos[$iArq],4) = "POMB" Then
+
+		 local $line = FileReadLine($hFileOpen,3)
+		 $rng.value =  StringStripWS(StringMid($line,13,13),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 $rng.offset(0,1).value = "POMB"
+		 $rng.offset(0,3).value = "OUVIDORIA"
+		 $rng.offset(0,16).value = "Não"
+
+		 ;Nome do Cliente
+		 local $line = FileReadLine($hFileOpen,12)
+		 if StringLen(StringStripWS(StringMid($line,34,40),$STR_STRIPLEADING + $STR_STRIPTRAILING)) > 0 then
+			$rng.offset(0,6).value = StringStripWS(StringMid($line,34,40),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 Else
+			local $line = FileReadLine($hFileOpen,5)
+			$rng.offset(0,6).value = StringStripWS(StringMid($line,15,66),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 endif
+
+		  ;CPF
+;~ 		 local $line = FileReadLine($hFileOpen,4)
+;~ 		 $rng.offset(0,7).value = StringMid($line,28,11)
+
+		 ;Data Original
+		 local $line = FileReadLine($hFileOpen,3)
+		 $rng.offset(0,4).value = StringMid($line,45,10) & " 00:00:00"
+
+		 ;Terminal de Contato
+		 local $line = FileReadLine($hFileOpen,6)
+		 $rng.offset(0,9).value = StringMid($line,11,12)
+
+		 ;Terminal Reclamado
+		 local $line = FileReadLine($hFileOpen,12)
+		 $rng.offset(0,8).value = StringMid($line,11,12)
+
+		 ;CNL
+		 local $line = FileReadLine($hFileOpen,17)
+		 $rng.offset(0,11).value = StringMid($line,51,5)
+
+		 $sReclamacao = ""
+		 For $i = 7 to 11
+			local $line = FileReadLine($hFileOpen,$i)
+			;$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,11,StringLen($line)-10),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+			$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,11,70),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 Next
+
+		 For $i = 17 to 22
+			local $line = FileReadLine($hFileOpen,$i)
+			;$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,2,StringLen($line)-1),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+			$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,11,70),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 Next
+
+	  Elseif StringLeft($aListArquivos[$iArq],14) = "Reiterado_POMB" Then
+
+		 local $line = FileReadLine($hFileOpen,3)
+		 $rng.value =  StringStripWS(StringMid($line,13,13),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 $rng.offset(0,1).value = "POMB"
+		 $rng.offset(0,3).value = "OUVIDORIA"
+		 $rng.offset(0,16).value = "Sim"
+
+		 ;Nome do Cliente
+		 local $line = FileReadLine($hFileOpen,12)
+		 if StringStripWS(StringLen(StringMid($line,34,40)),$STR_STRIPLEADING + $STR_STRIPTRAILING) > 0 then
+			$rng.offset(0,6).value = StringStripWS(StringMid($line,34,40),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 Else
+			local $line = FileReadLine($hFileOpen,5)
+			$rng.offset(0,6).value = StringStripWS(StringMid($line,15,66),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 endif
+
+		 ;CPF
+;~ 		 local $line = FileReadLine($hFileOpen,4)
+;~ 		 $rng.offset(0,7).value = StringMid($line,28,11)
+
+		 ;Data Original
+		 local $line = FileReadLine($hFileOpen,3)
+		 $rng.offset(0,4).value = StringMid($line,45,10) & " 00:00:00"
+
+		 ;Terminal de Contato
+		 local $line = FileReadLine($hFileOpen,6)
+		 $rng.offset(0,9).value = StringMid($line,11,12)
+
+		 ;Terminal Reclamado
+		 local $line = FileReadLine($hFileOpen,12)
+		 $rng.offset(0,8).value = StringMid($line,11,12)
+
+		 ;CNL
+		 local $line = FileReadLine($hFileOpen,17)
+		 $rng.offset(0,11).value = StringMid($line,51,5)
+
+		 $sReclamacao = ""
+		 For $i = 7 to 11
+			local $line = FileReadLine($hFileOpen,$i)
+			;$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,11,StringLen($line)-10),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+			$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,11,70),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 Next
+
+		 For $i = 17 to 22
+			local $line = FileReadLine($hFileOpen,$i)
+			;$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,2,StringLen($line)-1),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+			$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,11,70),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 Next
+
+	  ElseIf StringLeft($aListArquivos[$iArq],4) = "PACC" Then
+
+		 $rng.offset(0,1).value = "PACC"
+		 $rng.offset(0,3).value = "CARTA"
+		 $rng.offset(0,16).value = "Não"
+
+		 local $line = FileReadLine($hFileOpen,4)
+		 $rng.value =  StringStripWS(StringMid($line,16,13),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+
+		 ;Data Original
+		 local $line = FileReadLine($hFileOpen,4)
+		 $rng.offset(0,4).value = StringMid($line,47,10) & " 00:00:00"
+
+		 ;Nome do Cliente
+		 local $line = FileReadLine($hFileOpen,5)
+		 $rng.offset(0,6).value = StringStripWS(StringMid($line,15,65),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+
+		 ;Terminal de Contato
+		 local $line = FileReadLine($hFileOpen,6)
+		 $rng.offset(0,9).value = StringStripWS(StringMid($line,20,17),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+
+		 $sReclamacao = ""
+		 For $i = 7 to 11
+			local $line = FileReadLine($hFileOpen,$i)
+			;$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,11,StringLen($line)-10),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+			$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,11,70),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 Next
+
+	  ElseIf StringLeft($aListArquivos[$iArq],2) = "BC" Then
+
+		 local $line = FileReadLine($hFileOpen,4)
+		 $rng.value =  StringMid($line,71,9)
+
+		 $rng.offset(0,1).value = "BC"
+		 $rng.offset(0,3).value = "BILHETE DE CONTATO"
+		 $rng.offset(0,16).value = "Não"
+
+		 ;Data Original
+		 local $line = FileReadLine($hFileOpen,4)
+		 $rng.offset(0,4).value = StringMid($line,16,2) & "/" & StringMid($line,19,2) & "/20" & StringMid($line,22,2) & " 00:00:00"
+
+		 ;Nome do Cliente
+		 local $line = FileReadLine($hFileOpen,2)
+		 $rng.offset(0,6).value = StringStripWS(StringMid($line,7,65),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+
+		 ;Terminal de Contato
+		 local $line = FileReadLine($hFileOpen,4)
+		 $rng.offset(0,9).value = StringStripWS(StringMid($line,36,31),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+
+		 local $line = FileReadLine($hFileOpen,3)
+		 $rng.offset(0,14).value = StringMid($line,28,4)
+
+		 ;CNL
+		 local $line = FileReadLine($hFileOpen,3)
+		 $rng.offset(0,11).value = StringMid($line,39,5)
+
+		 $sReclamacao = ""
+		 For $i = 6 to 9
+			local $line = FileReadLine($hFileOpen,$i)
+			;$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,11,StringLen($line)-10),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+			$sReclamacao = $sReclamacao & StringStripWS(StringMid($line,24,55),$STR_STRIPLEADING + $STR_STRIPTRAILING)
+		 Next
+
+	  EndIf
+	  $rng.offset(0,2).value = $sReclamacao
+	  $rng.offset(0,17).value = "Não"
+
+
+	  FileDelete($sEndArquivo)
+	  ;FileClose($sEndArquivo)
+
+	  $rng = $rng.offset(1,0)
+   Next
+
+EndFunc
+func CopiaRegistros($iPag,$iReg,$sProcesso)
+
+$iContReg = $iReg
+$iNumReg = 1
+for $iPaginas = 1 to $iPag
+;for $iPaginas = 1 to 1
+
+   if $iPaginas > 1 then
+	  Send("{F8}")
+   EndIf
+
+   if $iContReg >=12 Then
+	  $iReg = 12
+	  WinActivate("pw3270")
+   Else
+	  $iReg = $iContReg
+   endif
+
+   for $iIndex = 1 to $iReg
+   ;for $iIndex = 1 to 1
+	  WinActivate("pw3270")
+	  Sleep(1000)
+	  Send("x",1)
+	  Send("{ENTER}")
+	  Sleep(500)
+	  WinActivate("pw3270")
+	  ;ControlClick("pw3270", "", "gdkWindowChild33")
+	  ;Send("{PAUSE}")
+	  Sleep(800)
+	  WinActivate("pw3270")
+	  Sleep(400)
+	  ControlClick("pw3270", "", "gdkWindowChild31") ;Citrix
+	  Send("{CTRLDOWN}a{CTRLUP}")
+	  Sleep(1000)
+	  Send("{CTRLDOWN}c{CTRLUP}")
+	  Sleep(1000)
+
+	  ;Run Notepad
+	  Run("notepad.exe")
+	  Local $hWnd = WinWait("[CLASS:Notepad]", "", 10)
+	  WinActivate($hWnd)
+
+	  Send("{CTRLDOWN}v{CTRLUP}")
+	  ;Send("{ENTER}")
+	  Sleep(500)
+
+;~ 	  WinActivate("pw3270")
+;~ 	  Send("{PAUSE}")
+;~ 	  Send("{F9}")
+
+;~ 	  Sleep(1000)
+;~ 	  WinActivate("pw3270")
+
+;~ 	  Sleep(500)
+;~ 	  WinActivate("pw3270")
+;~ 	  Send("{CTRLDOWN}a{CTRLUP}")
+;~ 	  Send("{CTRLDOWN}c{CTRLUP}")
+;~ 	  Sleep(1000)
+
+;~ 	  WinActivate($hWnd)
+;~ 	  Send("{CTRLDOWN}v{CTRLUP}")
+;~ 	  Send("{ENTER}")
+	  Send("{CTRLDOWN}s{CTRLUP}")
+	  Sleep(1000)
+	  Local $sArquivo = _PathFull(@ScriptDir) & "\Arquivos\" & $sProcesso & "_Registro_" & $iNumReg & ".txt"
+	  ;Send($sArquivo,1)
+	  WinActivate("Save As")
+	  ControlSetText("Save As", "", "Edit1",$sArquivo)
+	  ControlClick("Save As", "", "Button1") ;Citrix
+	  Sleep(500)
+	  ;Send("{ENTER}")
+	  WinClose($hWnd)
+	  Sleep(1000)
+
+;~ 	  Local $hFileOpen = FileOpen($sArquivo, $FO_READ)
+;~ 	  Local $sFileRead = FileReadLine($hFileOpen, 48)
+;~ 	  local $sValida   = StringMid($sFileRead,2,3)
+
+;~ 	  if $sValida = "NAO" then
+;~ 		 WinActivate("pw3270")
+;~ 		 Send("{F2}")
+;~ 	  Else
+
+;~ 		 Local $hFileOpen = FileOpen($sArquivo, $FO_READ)
+;~ 		 Local $sFileRead = FileReadLine($hFileOpen, 26)
+;~ 		 local $iValReg	  = StringMid($sFileRead,79,2)
+
+;~ 		 if Number($iValReg) > 1 then
+
+;~ 			for $iPagina = 2 to Number($iValReg)
+;~ 			  WinActivate("pw3270")
+;~ 			  Send("{F8}")
+;~ 			  Sleep(500)
+;~ 			  Send("{PAUSE}")
+;~ 			  Sleep(500)
+;~ 			  WinActivate("pw3270")
+;~ 			  Send("{CTRLDOWN}a{CTRLUP}")
+;~ 			  Send("{CTRLDOWN}c{CTRLUP}")
+;~ 			  WinActivate($hWnd)
+;~ 			  Sleep(500)
+
+;~ 			  Send("{CTRLDOWN}v{CTRLUP}")
+;~ 			  Sleep(1000)
+;~ 			  Send("{ENTER}")
+;~ 			  Send("{CTRLDOWN}s{CTRLUP}")
+
+;~ 			  Sleep(1000)
+;~ 			  WinActivate("pw3270")
+;~ 			  Sleep(1000)
+;~ 			next
+;~ 			WinClose($hWnd)
+
+;~ 			for $iPagina = 2 to Number($iValReg)
+;~ 			  Sleep(1000)
+;~ 			  Send("{F7}")
+;~ 			next
+
+;~ 			WinActivate("pw3270")
+;~ 			Send("{F2}")
+;~ 			Sleep(500)
+;~ 			Send("{F2}")
+;~ 		 Else
+;~ 			WinActivate("pw3270")
+;~ 			Send("{F2}")
+;~ 			Send("{F2}")
+;~ 			Sleep(500)
+;~ 		 endif
+;~ 	  EndIf
+
+	  WinActivate("pw3270")
+	  Send("{F2}")
+	  Sleep(1000)
+
+	  if $iIndex < 12 then
+		 for $i = 1 To $iIndex
+			Sleep(500)
+			Send("{Down}")
+		 next
+	  EndIf
+
+;~ 	  Sleep(1000)
+;~ 	  WinClose($hWnd)
+	  $iNumReg = $iNumReg + 1
+   next
+   $iContReg = $iContReg - 12
+next
+
+EndFunc
+Func ProcessoWcd($sUsuario,$sSenha)
+
+Local $sPath = _PathFull(@ScriptDir) & "\DeParaAtis.xlsx"
+Global $oExcelWcd = ObjCreate("Excel.Application")
+$oExcelWcd.WorkBooks.Open ($sPath)
+$oExcelWcd.visible = true
+
+;~ ; CONEXÃO COM WCD
+Global $oIE = _IECreate()
+_IENavigate($oIE, "http://10.31.1.10/jsp/main/login.jsp")
+_IELoadWait($oIE)
+
+$o_FormLogin = _IEFormGetObjByName($oIE, "login")
+$o_txt_user = _IEFormElementGetObjByName($o_FormLogin, "log1")
+$o_txt_pwd = _IEFormElementGetObjByName($o_FormLogin, "pass1")
+
+_IEFormElementSetValue($o_txt_user, $sUsuario)
+_IEFormElementSetValue($o_txt_pwd, $sSenha)
+_IEFormSubmit($o_FormLogin, "image")
+
+Local $hWnd = WinWait("iColabora", "", 60)
+WinSetState($hWnd, "", @SW_MAXIMIZE)
+
+;_IENavigate($oIE, "http://10.31.1.10/control/lRptProcess")
+_IENavigate($oIE,"http://10.31.1.10/control/callConnectorReportEXCELL?campo=&id=&username=" & $sUsuario & _
+			     "&preferred_language_code=2&id=&html_custom_view=&stOrderAscending=null&isEFormChanged=&controlSemaphore=0&eFormId=122&isEformEditable=1&c1=" & _
+				 "_G_AREA_DE_COBRANCA%27%2C%27_G_AREA_DE_COBRANCA_ANATEL&controlFieldType=varchar*varchar2&controlField=c1*c2&controlFieldFormat=VARCHAR*CUSTOM_COMBO&" & _
+				 "stIsShowHistoryData=0&stApplyIntoSelectionEnabled=null&eformassoc_id=null&eform_id=122&company_code=null&module=2&cmdOK=+++OK+++&typeOfExcel=XLSX&grupos=" & _
+				 "_G_AREA_DE_COBRANCA&c2=_G_AREA_DE_COBRANCA&connectorName=jo.call.server.obj.custom.JOEFormDataAdapter&command=queryTempByEFormData&eform_id=122&template_id=" & _
+				 "ANATEL_PROCESSOS_PENDENTES_GRUPOS&eformAssociableId=&module=1&enableSelectButton=0&sart=1&sast=0")
+_IELoadWait($oIE)
+
+if WinExists("Windows Internet Explorer") Then
+   WinActivate("Windows Internet Explorer")
+   Send("{TAB}{ENTER}")
+EndIf
+
+WinActivate($hWnd)
+Sleep(1000)
+Send("{ALTDOWN}{ALTUP}{ALTDOWN}s{ALTUP}")
+Sleep(1000)
+
+
+local $sArquivo = "C:\Downloads\" & $sUsuario & ".xlsx"
+;Algoritimo para busca DexPara
+Global $oExcel2 = ObjCreate("Excel.Application")
+$oExcel2.WorkBooks.Open ($sArquivo)
+$oExcel2.visible = true
+
+local $sht = $oExcel.WorkBooks($oExcel.WorkBooks.Count).Worksheets("Consolidado")
+if stringLen($sht.Range("A2").value) > 0 then
+   $iCountLine = $oExcel.WorksheetFunction.CountA($sht.Range("A:A"))
+   local $rng = $sht.Cells($iCountLine+1,1)
+else
+   local $rng = $sht.Range("A2")
+endif
+
+local $shtWcd = $oExcel2.WorkBooks($oExcel2.WorkBooks.Count).Worksheets("Resultado do Relatório")
+local $rngW = $shtWcd.Range("E7")
+
+while StringLen($rngW.value) > 0
+	  ;Numero Processo
+	  $rng.value = $rngW.offset(0,-2).value
+
+	  ;Data Original
+	  $rng.offset(0,4).value = $rngW.offset(0,3).value
+
+	  ;Produto
+	  ;$rng.offset(0,12).value = $rngW.offset(0,13).value
+
+	  ;SubProduto
+	  ;$rng.offset(0,13).value = $rngW.offset(0,14).value
+
+	  ;Terminal Reclamado
+	  $rng.offset(0,8).value = $rngW.offset(0,16).value
+
+	  ;CNL
+	  $rng.offset(0,11).value = $rngW.offset(0,17).value
+
+	  ;Documento
+	  $rng.offset(0,7).value = $rngW.offset(0,18).value
+
+	  $rng.offset(0,1).value = "PASA"
+	  $rng.offset(0,3).value = "ANATEL"
+	  $rng.offset(0,16).value = "Não"
+	  $rng.offset(0,17).value = "Não"
+
+	  $rng = $rng.offset(1,0)
+	  $rngW = $rngW.offset(1,0)
+   WEnd
+
+
+$oExcel2.WorkBooks($oExcel2.WorkBooks.Count).close
+$oExcel2.Quit
+FileDelete($sArquivo)
+
+Global $oIE2 = _IECreate()
+_IENavigate($oIE2,"http://10.31.1.10/control/callConnectorReportEXCELL?campo=&id=&username=" & $sUsuario & _
+				 "&preferred_language_code=2&id=&html_custom_view=&stOrderAscending=null&isEFormChanged=&controlSemaphore=0&eFormId=122&isEformEditable=1&c1=" & _
+				 "_G_AREA_DE_COBRANCA%27%2C%27_G_AREA_DE_COBRANCA_ANATEL&controlFieldType=varchar*varchar2&controlField=c1*c2&controlFieldFormat=VARCHAR*CUSTOM_COMBO&" & _
+				 "stIsShowHistoryData=0&stApplyIntoSelectionEnabled=null&eformassoc_id=null&eform_id=122&company_code=null&module=2&cmdOK=+++OK+++&typeOfExcel=XLSX&grupos=" & _
+				 "_G_AREA_DE_COBRANCA&c2=_G_AREA_DE_COBRANCA&connectorName=jo.call.server.obj.custom.JOEFormDataAdapter&command=queryTempByEFormData&eform_id=122&template_id=" & _
+				 "PROCON_PROCESSOS_PENDENTES_GRUPOS&eformAssociableId=&module=1&enableSelectButton=0&sart=1&sast=0")
+
+
+_IELoadWait($oIE2)
+
+if WinExists("Windows Internet Explorer") Then
+   WinActivate("Windows Internet Explorer")
+   Send("{TAB}{ENTER}")
+EndIf
+
+WinActivate("Blank Page")
+Sleep(1000)
+Send("{ALTDOWN}{ALTUP}")
+Sleep(500)
+Send("{ALTDOWN}s{ALTUP}")
+Sleep(1000)
+
+local $sArquivo = "C:\Downloads\" & $sUsuario & ".xlsx"
+;Algoritimo para busca DexPara
+Global $oExcel2 = ObjCreate("Excel.Application")
+$oExcel2.WorkBooks.Open ($sArquivo)
+$oExcel2.visible = true
+
+local $sht = $oExcel.WorkBooks($oExcel.WorkBooks.Count).Worksheets("Consolidado")
+if stringLen($sht.Range("A2").value) > 0 then
+   $iCountLine = $oExcel.WorksheetFunction.CountA($sht.Range("A:A"))
+   local $rng = $sht.Cells($iCountLine+1,1)
+else
+   local $rng = $sht.Range("A2")
+endif
+
+local $shtWcd = $oExcel2.WorkBooks($oExcel2.WorkBooks.Count).Worksheets("Resultado do Relatório")
+local $rngW = $shtWcd.Range("E7")
+
+while StringLen($rngW.value) > 0
+	  ;Numero Processo
+	  $rng.value = $rngW.offset(0,-2).value
+
+	  ;Data Original
+	  $rng.offset(0,4).value = $rngW.offset(0,2).value
+
+	  ;Produto
+	  $rng.offset(0,12).value = $rngW.offset(0,11).value
+
+	  ;SubProduto
+	  $rng.offset(0,13).value = $rngW.offset(0,12).value
+
+	  ;Terminal Reclamado
+	  $rng.offset(0,8).value = $rngW.offset(0,20).value
+
+	  ;CNL
+	  $rng.offset(0,11).value = $rngW.offset(0,21).value
+
+	  ;Documento
+	  $rng.offset(0,7).value = $rngW.offset(0,22).value
+
+	  $rng.offset(0,1).value = "PAPP"
+	  $rng.offset(0,3).value = "PROCON"
+	  $rng.offset(0,16).value = "Não"
+	  $rng.offset(0,17).value = "Não"
+
+	  $rng = $rng.offset(1,0)
+	  $rngW = $rngW.offset(1,0)
+   WEnd
+
+$oExcel2.WorkBooks($oExcel2.WorkBooks.Count).close
+$oExcel2.Quit
+
+FileDelete($sArquivo)
+_IEQuit($oIE2)
+
+Global $oIE3 = _IECreate()
+_IENavigate($oIE3,"http://10.31.1.10/control/callConnectorReportEXCELL?campo=&id=&username=" & $sUsuario & _
+				  "&preferred_language_code=2&id=&html_custom_view=&stOrderAscending=null&isEFormChanged=&" & _
+				  "controlSemaphore=0&eFormId=122&isEformEditable=1&c1=_G_AREA_DE_COBRANCA%27%2C%27_G_AREA_DE_COBRANCA_ANATEL&" & _
+				  "controlFieldType=varchar*varchar2&controlField=c1*c2&controlFieldFormat=VARCHAR*CUSTOM_COMBO&stIsShowHistoryData=0&" & _
+				  "stApplyIntoSelectionEnabled=null&eformassoc_id=null&eform_id=122&company_code=null&module=2&cmdOK=+++OK+++&typeOfExcel=XLSX&c2=" & _
+				  "_G_AREA_DE_COBRANCA&grupos=_G_AREA_DE_COBRANCA&connectorName=jo.call.server.obj.custom.JOEFormDataAdapter&command=queryTempByEFormData&eform_id=" & _
+				  "122&template_id=CONSUMIDOR_GOV_PROCESSOS_POR_GRUPO&eformAssociableId=&module=1&enableSelectButton=0&sart=1&sast=0")
+
+
+_IELoadWait($oIE3)
+
+if WinExists("Windows Internet Explorer") Then
+   WinActivate("Windows Internet Explorer")
+   Send("{TAB}{ENTER}")
+EndIf
+
+WinActivate("Blank Page")
+Sleep(1000)
+Send("{ALTDOWN}{ALTUP}")
+Sleep(500)
+Send("{ALTDOWN}s{ALTUP}")
+Sleep(1000)
+
+local $sArquivo = "C:\Downloads\" & $sUsuario & ".xlsx"
+;Algoritimo para busca DexPara
+Global $oExcel2 = ObjCreate("Excel.Application")
+$oExcel2.WorkBooks.Open ($sArquivo)
+$oExcel2.visible = true
+
+local $sht = $oExcel.WorkBooks($oExcel.WorkBooks.Count).Worksheets("Consolidado")
+if stringLen($sht.Range("A2").value) > 0 then
+   $iCountLine = $oExcel.WorksheetFunction.CountA($sht.Range("A:A"))
+   local $rng = $sht.Cells($iCountLine+1,1)
+else
+   local $rng = $sht.Range("A2")
+endif
+
+local $shtWcd = $oExcel2.WorkBooks($oExcel2.WorkBooks.Count).Worksheets("Resultado do Relatório")
+local $rngW = $shtWcd.Range("E7")
+
+while StringLen($rngW.value) > 0
+	  ;Numero Processo
+	  $rng.value = $rngW.offset(0,-2).value
+
+	  ;Data Original
+	  $rng.offset(0,4).value = $rngW.offset(0,2).value
+
+	  ;Produto
+	  $rng.offset(0,12).value = $rngW.offset(0,11).value
+
+	  ;SubProduto
+	  $rng.offset(0,13).value = $rngW.offset(0,12).value
+
+	  ;Terminal Reclamado
+	  $rng.offset(0,8).value = $rngW.offset(0,17).value
+
+	  ;CNL
+	  $rng.offset(0,11).value = $rngW.offset(0,18).value
+
+	  ;Documento
+	  $rng.offset(0,7).value = $rngW.offset(0,19).value
+
+	  $rng.offset(0,1).value = "CONSUMIDOR.GOV"
+	  $rng.offset(0,3).value = "CONSUMIDOR.GOV"
+	  $rng.offset(0,16).value = "Não"
+	  $rng.offset(0,17).value = "Não"
+	  $rng = $rng.offset(1,0)
+	  $rngW = $rngW.offset(1,0)
+   WEnd
+
+$oExcel2.WorkBooks($oExcel2.WorkBooks.Count).close
+$oExcel2.Quit
+FileDelete($sArquivo)
+_IEQuit($oIE3)
+_IEQuit($oIE)
+WinSetState("iColabora","",@SW_DISABLE)
+
+$oExcelWcd.WorkBooks($oExcelWcd.WorkBooks.Count).Worksheets("Consolidado").copy
+   Local $sArqAtis = "Planilha_Sistema_SGQD_WCD" & _NowCalcDate() & ".xlsx"
+   $oExcelWcd.WorkBooks($oExcelWcd.WorkBooks.Count).Saveas (_PathFull(@ScriptDir) & "\" & $sArqAtis)
+   $oExcelWcd.WorkBooks("DeParaAtis.xlsx").close (False)
+   $oExcelWcd.WorkBooks($sArqAtis).close (False)
+;return 0
+
+EndFunc
+Func convertData($sDate)
+   $aDate = StringSplit($sDate,"/")
+   $sDate_New = $aDate[3] & "/" & $aDate[2] & "/" & $aDate[1]
+   Return $sDate_New
+EndFunc
+

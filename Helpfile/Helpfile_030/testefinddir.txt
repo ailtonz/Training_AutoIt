@@ -1,0 +1,36 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <Array.au3>
+#include <File.au3>
+Func GetDir($sFilePath)
+
+    Local $aFolders = StringSplit($sFilePath, "\")
+    Local $iArrayFoldersSize = UBound($aFolders)
+    Local $FileDir = ""
+
+    If (Not IsString($sFilePath)) Then
+        Return SetError(1, 0, -1)
+    EndIf
+
+    $aFolders = StringSplit($sFilePath, "\")
+    $iArrayFoldersSize = UBound($aFolders)
+
+    For $i = 1 To ($iArrayFoldersSize - 2)
+        $FileDir &= $aFolders[$i] & "\"
+    Next
+
+    Return $FileDir
+
+   _ArrayDisplay($iArrayFoldersSize)
+EndFunc   ;==>GetDir
+
+GetDir("C:\Users\80364630\Documents\Luiz Alencar")
+

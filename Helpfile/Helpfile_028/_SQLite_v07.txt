@@ -1,0 +1,105 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <MsgBoxConstants.au3>
+#include <SQLite.au3>
+#include <SQLite.dll.au3>
+#include <file.au3>
+#include <array.au3>
+
+#include "funcoes_UTIL_150730-1507.au3"
+
+#Region PreSets
+HotKeySet("^{end}", "CaptureEsc")
+Opt("GUIOnEventMode",1)
+#EndRegion
+
+
+Local $x,$y=0,$t=0,$iStatus
+Local $aArray[0],$tmp="", $head="",$Table="Cliente"
+Local $aRetArray, $sFilePath = @ScriptDir & "\01081885_DE_4044597052_ABRIL COMUNICACOES S A_DECOMPLETO01.CSV"
+Local $sBanco=@ScriptDir & "\" & "base.db"
+
+ConsoleWrite(@HOUR &":"& @MIN &":"& @SEC & @CR)
+
+if FileExists($sBanco) Then
+	Local $iDelete = FileDelete($sBanco)
+
+;~ 	If $iDelete Then
+;~ 		MsgBox($MB_SYSTEMMODAL, "", "The file was successfuly deleted.")
+;~ 	Else
+;~ 		MsgBox($MB_SYSTEMMODAL, "", "An error occurred whilst deleting the file.")
+;~ 	EndIf
+
+EndIf
+
+
+_SQLite_Startup()
+
+_FileReadToArray($sFilePath, $aRetArray, $FRTA_NOCOUNT)
+
+_ShowStatus("CRIAR/ABRIR BASE")
+local $db = _SQLite_Open($sBanco)
+local $grupo = 500,$ultGrupo
+
+;~ _ShowStatus("DELETE TABELA")
+;~ _SQLite_Exec($db, "DROP TABLE IF EXISTS " & $Table & " ;")
+
+_ShowStatus("CRIAR TABELA")
+_SQLite_Exec($db, "CREATE TABLE IF NOT EXISTS " & $Table & " (" & StringReplace($aRetArray[0],";",",") & ");")
+
+_ShowStatus("CARREGAR VALORES PARA INCLUSAO")
+ProgressOn("Carregando Registros da Planilha", "Por Favor Aguarde!", "0%")
+
+
+While $x<=ubound($aRetArray,1)
+
+	if ubound($aRetArray,1) - $x  > 500 Then
+		$grupo = 500
+	Else
+		$grupo = ubound($aRetArray,1) - $x
+	EndIf
+
+	for $z=1 to $grupo
+
+		$iStatus = ($x / (Ubound($aRetArray)-1)) * 100
+		if $z = 1 Then
+			_ShowStatus("INSERIR DADOS")
+			$tmp = "INSERT INTO " & $Table & " (" & StringReplace($aRetArray[0],";",",")  & ") VALUES "
+		EndIf
+
+		$tmp = $tmp & "('" & StringReplace($aRetArray[$x],";","','") & "'),"
+		$y+=1
+
+		_ShowStatus("ADD - GRUPO : " & $y)
+		if $z - $grupo = 0 Then
+			_SQLite_Exec($db, (StringLeft($tmp,StringLen($tmp)-1)) & ";")
+			$tmp = ""
+			$y=0
+			$t+=1
+		EndIf
+		ProgressSet($iStatus, StringLeft($iStatus,4) & "%")
+
+		_ShowStatus($iStatus)
+		$x+=1
+	Next
+
+WEnd
+
+ProgressSet(100, "Carregamento Completo", "Completo")
+ProgressOff()
+
+_SQLite_Close()
+_SQLite_Shutdown()
+
+ConsoleWrite(@HOUR &":"& @MIN &":"& @SEC & @CR)
+
+MsgBox(0,"Fim","ok")
+

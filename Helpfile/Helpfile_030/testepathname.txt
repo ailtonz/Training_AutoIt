@@ -1,0 +1,26 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <File.au3>
+#include <MsgBoxConstants.au3>
+
+exemplo()
+
+func Exemplo()
+
+Local $sTestPath = _PathFull(@ScriptDir ) & "\Bradesco"
+;MsgBox($MB_SYSTEMMODAL, "", @ScriptDir & @CRLF & $sTestPath)
+
+Local $aFileList = _FileListToArray($sTestPath,"*", $FLTA_FILES )
+_ArrayDisplay($aFileList)
+
+EndFunc
+
+

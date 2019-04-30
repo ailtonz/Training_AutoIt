@@ -1,0 +1,19 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <File.au3>
+#include <MsgBoxConstants.au3>
+
+local $tmpArqTexto = "C:\Users\a.dasilva\Desktop\ACCENTURE\Projeto Aline\#ID.66_Baixas por Pagamentos Manuais - FT01\_TUTORIAL\Fat1011A_04052015.txt"
+
+
+Local $iCountLines = _FileCountLines($tmpArqTexto)-6 ; Retrieve the number of lines in the current script.
+MsgBox($MB_SYSTEMMODAL, "", "There are " & $iCountLines & " lines in this file.")
+

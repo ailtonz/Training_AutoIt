@@ -1,0 +1,17 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+; Script Function:
+; WinWait example.
+
+Run('Calc')
+WinWait('Calculator')
+MsgBox(64, 'Functions', 'Your Calculator is showing.')
+

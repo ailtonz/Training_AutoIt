@@ -1,0 +1,457 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <MsgBoxConstants.au3>
+#include <FileConstants.au3>
+#include <StringConstants.au3>
+#include <Clipboard.au3>
+#include <GUIConstantsEx.au3>
+#include <String.au3>
+#include <GUIConstantsEx.au3>
+#include <WindowsConstants.au3>
+#include <GuiListView.au3>
+#include <File.au3>
+#include <Array.au3>
+
+Global $objExcel = ObjCreate("Excel.Application")
+Global $objFile  = ObjCreate("Scripting.FileSystemObject")
+Global $objIE    = ObjCreate("InternetExplorer.Application")
+Global $vbCritical=16
+
+Global $strArqSel
+Global $strArq
+Global $aArq
+Global $strArqOCA_REL         ;Local onde está localizado os arquivos TXT ( OCA e REL_FOTO )
+Global $strArqMatrizTerminais ;Local onde será exportado os arquivos Matriz de oferta e terminais
+Global $Arq
+Global $Aspas = """"          ;Para facilitar a leitura da concatenzação de aspas
+Global $DatArqFOTO            ;Data do arquivo REL_FOTO_OCA_   1º data
+Global $DatArqOCA             ;Data do arquivo OCA_            2º data
+
+Global $CNBANCO = ObjCreate("ADODB.Connection") ;Conexão
+Global $Rs      = ObjCreate("ADODB.RecordSet")  ;RecordSet
+
+;-------- Abrindo parametros
+$objExcel.Workbooks.Open(AppPath() & "/PARAMETROS.xlsx");Abre Excel com os parametros
+$strArqOCA_REL         = $objExcel.Cells(2,1).value     ;Arquivos OCA E REL_FOTO
+$strArqMatrizTerminais = $objExcel.Cells(2,2).value     ;Caminho para exportar Matriz de oferta e terminais
+
+;-------- Buscando arquivos TXT na pasta conforme arquivo parametros
+$Arq = ArquivosEmPasta($strArqOCA_REL,"*OCA*.txt")      ;Busca por OCA E REL_FOTO_OCA
+For $J = 1 to UBound($Arq) -1
+    $strArq = $strArq & $Arq[$J] & ";"
+ Next
+
+$strArq = StringMid($strArq,1,StringLen($strArq)-1)                  ;Tira o último ';' do array
+$aArq   = StringSplit($strArq,";")                                   ;Transforma em array
+$strArq = iif(StringInStr($aArq[1],"FOTO_"),$aArq[1],$aArq[2])       ;Qual posição está o primeiro txt que preciso processar
+
+$DatArqFOTO = StringMid($strArq,StringInStr($strArq,"FOTO_OCA")+9,8) ;Pega somente YYYYMMDD do TXT
+
+;+------------------------------------------------+
+;| Conexão PRODUÇÃO                               |
+;+------------------------------------------------+
+Global $sADOConnectionString = "DRIVER={MySQL ODBC 3.51 Driver};SERVER=10.128.222.78;DATABASE=Matriz_Oferta;UID=asf8788;PWD=asf8788;"
+
+;==================================================================================================================
+;##########################################   REL_FOTO_OCA   ######################################################
+;==================================================================================================================
+
+$CNBANCO.Execute("use producao")
+$CNBANCO.Execute("truncate table carteira_oca")
+$CNBANCO.Execute("alter table carteira_oca Drop key `cpf`")
+
+ToolTip("Importando FOTO_OCA",0,05,"Processando",1,1)
+$strSQL = "           LOAD DATA LOCAL INFILE " & """" & StringReplace($strArqOCA_REL,"\","/")  & "/" & $strArq & """"
+$strSQL = $strSQL & " INTO TABLE carteira_oca "
+$strSQL = $strSQL & " FIELDS TERMINATED BY " & """;""" & " LINES TERMINATED BY " & """\r\n""" & " ignore 1 lines;"
+$CNBANCO.Execute($strSQL)
+
+$CNBANCO.Execute("Update carteira_oca Set data_hora=curdate()+0;")
+$CNBANCO.Execute("Alter table carteira_oca add index `cpf` ( `cpf` );")
+
+;+-----------------------------------------------------------------------------------------------------------------------------+
+;| Como há possibilidades de futuras alterações, o sistema le o arquivo SQL e executa, pula linhas em brancos e iniciais com # |
+;+-----------------------------------------------------------------------------------------------------------------------------+
+Local $Linha
+$Dados = $objFile.OpenTextFile(AppPath() & "\SCRIPTS\matriz_de_oferta_gerar.sql")
+
+While $Dados.AtEndOfStream <> True
+      $Linha = $Dados.ReadLine
+	  ToolTip("Executando: " & $Linha,0,05,"Processando",1,1)
+      If StringMid($Linha,1,1) <> "#" Then
+		 If StringLen($Linha) > 1 Then
+			ToolTip("Executando: " & $Linha  ,0,05,"Processando",1,1)
+			$CNBANCO.Execute($Linha)
+		 EndIf
+	  EndIf
+WEnd
+
+ToolTip("Criando tabela matriz",0,05,"Processando",1,1)
+$strSQL = "     Create table matriz "
+$strSQL = $strSQL  & " select oca_id, right(concat('0000000000',conta),10) as conta, desc_avista, desc_parce, n_parce,"
+$strSQL = $strSQL  & " aging, cl_score, classe, right(fatura,2) as dia_vec, regional, agencia from carteira_oca"
+$CNBANCO.Execute($strSQL)
+
+$CNBANCO.Execute("Update matriz Set n_parce='5';")
+$CNBANCO.Execute("Drop table if exists t_terminal;")
+$CNBANCO.Execute("Create table t_terminal select * from terminais;")
+
+;==================================================================================================================
+;############################## EXPORTANDO OS DADOS - DOCUMENTO ITO 4.2.3 #########################################
+;==================================================================================================================
+ToolTip("Exportando Matriz",0,05,"Processando",1,1)
+$strSQL = "     SELECT * INTO OUTFILE " & $Aspas & StringReplace($strArqMatrizTerminais,"\","/") & "/EXPORTACAO_MATRIZ.TXT" & $Aspas
+$strSQL = $strSQL & " FIELDS TERMINATED BY "";""" & " LINES TERMINATED BY " & """\r\n"""
+$strSQL = $strSQL & " From matriz "
+$CNBANCO.Execute($strSQL)
+
+;==================================================================================================================
+;  ABRIR A PARTIR DE AGORA O BANCO LOCAL -- localhost
+;==================================================================================================================
+$CNBANCO.Close
+;+------------------------------------------------+
+;| Conexão LOCAL                                  |
+;+------------------------------------------------+
+Global $sADOConnectionString = "DRIVER={MySQL ODBC 3.51 Driver};SERVER=localhost;DATABASE=Matriz_Oferta;UID=root;PWD=;"
+$CNBANCO.Open($sADOConnectionString) ;Abre
+
+;==================================================================================================================
+;######################## EXCLUINDO INF. E IMPORTANDO PARA MYSQL LOCAL ############################################
+;==================================================================================================================
+
+;Item 4.2.4
+;Subitem
+;      4 - Selecionar a pasta/tabela matriz e excluir essas informações utilizando Shift+Del ou botão direito e clicar em Empty Table;
+
+$CNBANCO.Execute("use Matriz_Oferta")
+$CNBANCO.Execute("Truncate table matriz;")
+
+ToolTip("Importando matriz gerada em txt",0,05,"Processando",1,1)
+$strSQL = "           LOAD DATA LOCAL INFILE " & $Aspas & StringReplace($strArqMatrizTerminais,"\","/") & "/EXPORTACAO_MATRIZ.TXT" & $Aspas
+$strSQL = $strSQL & " INTO TABLE matriz "
+$strSQL = $strSQL & " FIELDS TERMINATED BY " & $Aspas & ";" & $Aspas & " LINES TERMINATED BY " & $Aspas & "\r\n" & $Aspas & " ignore 1 lines;"
+$CNBANCO.Execute($strSQL)
+
+;==================================================================================================================
+;#############################    4.2.5 PROCESSAMENTO DOS ARQUIVOS MATRIZ E TERMINAIS     #########################
+;==================================================================================================================
+
+$strArq = FindArray($aArq,"FOTO_")
+IF $strArq = 1 Then    ;Selecionando o TXT OCA_, se achou FOTO_ então traga o outro
+   $strArq = $aArq[2]
+Else
+   $strArq = $aArq[1]
+EndIf
+
+$DatArqOCA  = StringMid($strArq,StringInStr($strArq,"OCA_")+13,8) ;Pega somente YYYYMMDD do TXT
+
+$CNBANCO.Execute("Truncate table terminais;")
+
+ToolTip("Processando OCA_",0,05,"Processando",1,1)
+$strSQL = "           LOAD DATA LOCAL INFILE " & $Aspas & StringReplace($strArqOCA_REL,"\","/") & "/" & $strArq & $Aspas
+$strSQL = $strSQL & " INTO TABLE terminais "
+$strSQL = $strSQL & " FIELDS TERMINATED BY " & """;""" & " LINES TERMINATED BY " & """\r\n""" & " ignore 1 lines;"
+$CNBANCO.Execute($strSQL)
+
+$CNBANCO.Execute("Update matriz set n_parce='5';")
+
+;================================================================================================
+;                              EXPORTAÇÃO E ZIPANDO AS AGÊNCIAS
+;================================================================================================
+;  Lendo arquivo SQL e processando todos os terminais dinamicamente...
+;================================================================================================
+
+Global $strTemp
+Global $strAgencia
+Global $strAgenciaFull
+Global $strAgenciaFull2
+Global $strAgenciaTmp
+Global $strAgenciaFullTmp
+Global $strAgenciaFullTmp2
+Global $strPosAgencia
+Global $nPOSINI
+Global $nPOSFIM
+Global $i=0
+Global $strSecao
+Global $strPath
+Global $aPath
+
+$Dados = $objFile.OpenTextFile(AppPath() & "\SCRIPTS\matriz_de_oferta_terminais_e_exportar.sql")
+While $Dados.AtEndOfStream <> True
+      $Linha = $Dados.ReadLine
+	  If $Linha = "####Terminais####" Then $strSecao = 1 ;Indica que entrou na seção ###Terminais### no arquivo SQL
+
+	  If StringLen($Linha) >= 1 and StringMid($Linha,1,1) <> "#" Then
+		 $strTemp = $strTemp & $Linha          ;Incrementando informações
+
+		 If StringMid($Linha,1,1) = ">"  Then ;Identificando o final do script
+			$i=$i+1
+			$strAgencia = NomeAgencia($strTemp,"INTO OUTFILE")[0]  ;Depois do 'INTO OUTFILE' verifica qual é o nome da agência, ver function, trás posição 0 do array
+			ToolTip("Agências: " & $strAgencia ,0,05,"Processando",1,1)
+
+			;+-----------------------------------------+
+			;| Ajustando o script para ser processado  |
+			;+-----------------------------------------+
+			$strPosAgencia = StringMid($strTemp,NomeAgencia($strTemp,"INTO OUTFILE")[1],NomeAgencia($strTemp,"INTO OUTFILE")[2]+1)
+			$strTemp = TrocaChar($strTemp,"DATA_ARQUIVO",$DatArqOCA)
+			$CNBANCO.Execute(TrocaChar(StringReplace($strTemp,$strPosAgencia, StringReplace($strArqMatrizTerminais,"\","/") & "/" & $strPosAgencia),"<,>",""))
+
+			;+------------------------------------------------------------------------------------------------------------------+
+			;| O objetivo é identificar se no loop a agencia é a mesma no $strAgenciaTmp, caso negativo processar a compactação |
+			;+------------------------------------------------------------------------------------------------------------------+
+			If $strAgenciaTmp <> $strAgencia And $i <> 1 and $strSecao <> 1 Then ;Sempre no primeiro loop é diferente por isso <> 1, sendo assim compacte o arquivo, pois chegou ao fim desta agencia
+			   $strPath = $strPath & $strAgenciaTmp & ";"
+    		   Run("cmd /c " & $strArqMatrizTerminais & "\7z.exe a " & $strArqMatrizTerminais & "\" & $strAgenciaTmp & "\" & $strAgenciaTmp & "_" & Now("") & ".zip " & $strArqMatrizTerminais & "\" & $strAgenciaTmp & "\Matriz*.*","",@SW_HIDE)
+			EndIf
+
+  			$strTemp=""                                              ;Zera informações incrementadas
+			$strAgenciaTmp = StringReplace($strAgencia," "," ")      ;Próxima agencia
+		 EndIf
+	  EndIf
+WEnd
+
+$strPath = StringMid($strPath,1,StringLen($strPath)-1)
+$aPath = StringSplit($strPath,";")
+
+For $i = 1 To UBound($aPath)-1 ;Tira o últim do script SQL que é o FIM_AGENCIAS, veja o arquivo .SQL
+    ToolTip("Terminais: " & $aPath[$i] ,0,05,"Processando",1,1)
+	Run("cmd /c " & $strArqMatrizTerminais & "\7z.exe a " & $strArqMatrizTerminais & "\" & $aPath[$i] & "\Terminais_" & $aPath[$i] & "_" & Now("") & ".zip " & $strArqMatrizTerminais & "\" & $aPath[$i] & "\Terminais_*.*","",@SW_HIDE)
+Next
+
+
+$objIE.quit
+$objExcel.WorkBooks(1).Close
+$objExcel.Quit
+$CNBANCO.Close
+
+MsgBox(0,"Atenção","Processamento realizado com sucesso.")
+
+
+;================================================================================================
+; FIM DA EXPORTAÇÃO E COMPACTAÇÃO
+;================================================================================================
+
+;================================================================================================
+; TRANSFERENCIA DE ARQUIVOS VIA WEB
+;================================================================================================
+
+
+
+;+-------------------------------------------------------------------------------------------------------------------------------------------->
+;| Funções diversas
+;+-------------------------------------------------------------------------------------------------------------------------------------------->
+Func qtdLinExcel($strCol)
+     Return ($objExcel.Range($strCol & 65536).End(-4162).Row)
+	 ; -4162 equivale a constante xlUp do Excel
+EndFunc
+;--------------------------------------------------------------------------------------------------------------------------------------------->
+Func Trim($strString)
+     ;Um Trim menos trabalhoso
+     Return StringStripWS($strString,$STR_STRIPLEADING + $STR_STRIPTRAILING + $STR_STRIPSPACES +$STR_STRIPALL)
+EndFunc
+;--------------------------------------------------------------------------------------------------------------------------------------------->
+Func Sair()
+     MsgBox($vbCritical,"Atenção","Rotina interrompida.")
+     Exit
+  EndFunc
+;--------------------------------------------------------------------------------------------------------------------------------------------->
+Func TiraPV($strVlr)
+     $strVlr = StringReplace($strVlr,",","")
+	 $strVlr = StringReplace($strVlr,".","")
+     Return ($strVlr)
+EndFunc
+;--------------------------------------------------------------------------------------------------------------------------------------------->
+Func iif($cond, $res_true, $res_false)
+    If $cond Then
+        Return $res_true
+    Else
+        Return $res_false
+    EndIf
+EndFunc
+;--------------------------------------------------------------------------------------------------------------------------------------------->
+Func AppPath()
+     Return @ScriptDir
+EndFunc
+;--------------------------------------------------------------------------------------------------------------------------------------------->
+Func ArquivosEmPasta($strPasta,$strFiltro)
+     ;Retorna um Array com os arquivos.
+     Local $aFiles = _FileListToArray($strPasta,$strFiltro)
+	 If UBound($aFiles)=0 Then
+        $aFiles=StringSplit("Nenhum Arquivo localizado.",";")
+     EndIf
+     Return($aFiles)
+EndFunc
+;--------------------------------------------------------------------------------------------------------------------------------------------->
+Func ListaArquivos()
+   ;Cria um formulário onde o mesmo apresenta todos os arquivos de uma pasta especifica
+   ;e ao clicar no botão o mesmo devolve o arquivo selecionado.
+    GUICreate("Arquivos Disponíveis", 520, 310, 400, 200)
+    Local $idListview = GUICtrlCreateListView("Arquivos",10, 10, 500, 250,0x0010)
+
+	$Arq = ArquivosEmPasta(@ScriptDir & "","*.txt")
+	For $J = 1 to UBound($Arq) -1
+        GUICtrlCreateListViewItem($Arq[$J], $idListview)
+    Next
+
+    _GUICtrlListView_SetColumnWidth($idListview, 0, 490) ; Ajusta a largura da coluna 0 'Arquivos'
+
+    Local $cmdProcessar = GUICtrlCreateButton("Processar", 290, 270, 110, 30)
+	Local $cmdSair      = GUICtrlCreateButton("Sair", 400, 270, 110, 30)
+
+    GUISetState(@SW_SHOW)
+
+    While 1
+        Switch GUIGetMsg()
+               Case $GUI_EVENT_CLOSE,$cmdSair
+		            If MsgBox(36+256,"Atenção","Deseja sair ?")=6 Then Exit
+               Case $cmdProcessar
+				    $strArqSel = StringReplace( GUICtrlRead(GUICtrlRead($idListview),1), "|","")
+				    ExitLoop
+        EndSwitch
+    WEnd
+ EndFunc
+;--------------------------------------------------------------------------------------------------------------------------------------------->
+ Func StrZero($strString,$strQTD)
+	  If StringLen($strString)= $strQTD Then
+		 Return($strString)
+	  Else
+         $QTD = ($strQTD - StringLen($strString))
+		 $strString = _StringRepeat("0",$QTD) & $strString
+         Return($strString)
+	  EndIf
+   EndFunc
+;--------------------------------------------------------------------------------------------------------------------------------------------->
+Func AcessoPW()
+   ;Monta um formulário com os campos Usuário e senha e retorna um Array com as informações
+    GUICreate("Acesso ao PW/CSO", 400, 120, @DesktopWidth / 2 - 160, @DesktopHeight / 2 - 45, -1, $WS_EX_ACCEPTFILES)
+
+	GUICtrlCreateLabel("Usuário CSO", 10, 10, 250, 40)
+	Local $txtUSER = GUICtrlCreateInput("", 80, 5, 300, 20)
+
+    GUICtrlCreateLabel("Senha", 40, 40, 30, 40)
+	Local $txtSenha = GUICtrlCreateInput("", 80, 35, 300, 20,0x0020)
+
+	Local $cmdConfirmar = GUICtrlCreateButton("Confirmar", 210, 75, 80, 30)
+	Local $cmdSair = GUICtrlCreateButton("Sair", 300, 75, 80, 30)
+
+    GUISetState(@SW_SHOW)
+
+    While 1
+        Switch GUIGetMsg()
+            Case $GUI_EVENT_CLOSE,$cmdSair ; Se clicar no [X] ou clicar no Sair então saia do Loop
+                ExitLoop
+            Case $cmdConfirmar
+                 $strUSER  = GUICtrlRead($txtUSER)
+				 $strSENHA = GUICtrlRead($txtSenha)
+				 ExitLoop
+        EndSwitch
+    WEnd
+    Return( StringSplit($strUSER & ";" & $strSENHA,";") )
+EndFunc
+;--------------------------------------------------------------------------------------------------------------------------------------------->
+func Now($strFormato) ;Retorna com formato
+	 ;Exemplo:  Now("/")  retorna dd/mm/yyyy
+	 ;Exemplo:  Now("-")  retorna dd-mm-yyyy
+	 Return (@MDAY & $strFormato & @MON & $strFormato & @YEAR)
+EndFunc
+;--------------------------------------------------------------------------------------------------------------------------------------------->
+Func FindArray($aArray,$strLocalizar)
+
+Local $I
+Local $nPos
+Local $nElementos
+
+$nElementos = UBound($aArray)
+
+if Number($nElementos)<=0 Then Exit Func
+
+For $I = 0 to $nElementos
+    if $I = $nElementos Then
+	   Return(-1)
+	   ExitLoop
+    EndIf
+
+    $nPos = StringInStr($aArray[$I],$strLocalizar)
+	If Number($nPos) > 0 Then
+	   Return($I)
+	   Exit For
+	EndIf
+
+Next
+
+EndFunc
+;--------------------------------------------------------------------------------------------------------------------------------------------->
+Func TrocaChar($cDado,$aProcurar,$cSubst)
+;Tem por finalidade usar o replace de varios caracteres, veja exemplo
+;MsgBox(0,"Atenção",TrocaChar("TESTANDO","T","@"))
+Local $i = 0
+Local $strTemp
+
+Local $aFind = StringSplit($aProcurar,",")
+
+For $i = 1 to UBound($aFind)-1
+    $strTemp = StringReplace($cDado,$aFind[$i],$cSubst)
+	$cDado = $strTemp
+Next
+Return($cDado)
+EndFunc
+;--------------------------------------------------------------------------------------------------------------------------------------------->
+Func NomeAgencia($strString,$strProcurar)
+
+Local $nPOSINI
+Local $nPOSFIM
+Local $aArray[3]
+
+$nPOSINI = StringInStr($strString,$strProcurar)+14
+$nPOSFIM = StringInStr($strString,"/",0,1,$nPOSINI)
+$strAge  = StringMid($strString,$nPOSINI,$nPOSFIM-$nPOSINI)
+
+;Retorna um array com o Nome da agencia, posição inicial e diferença entre fim e ini
+;as posições serão usadas no retorno
+Local $aArray[3] = [$strAge,$nPOSINI,$nPOSFIM-$nPOSINI]
+
+Return($aArray)
+
+EndFunc
+;--------------------------------------------------------------------------------------------------------------------------------------------->
+Func NomeAgencia2($strString,$strProcurar)
+
+Local $nPOSINI
+Local $nPOSFIM
+Local $aArray[3]
+
+$nPOSINI = StringInStr($strString,$strProcurar)+13
+$nPOSFIM = StringInStr($strString,"'",0,1,$nPOSINI)
+$strAge  = StringMid($strString,$nPOSINI,$nPOSFIM-$nPOSINI)
+
+;Retorna um array com o Nome da agencia, posição inicial e diferença entre fim e ini
+;as posições serão usadas no retorno
+Local $aArray[3] = [$strAge,$nPOSINI,$nPOSFIM-$nPOSINI]
+
+Return($aArray)
+
+EndFunc
+;--------------------------------------------------------------------------------------------------------------------------------------------->
+Func ListaPastas($strPath)
+;Lista as pastas e retorna no Array
+    Local $aFileList = _FileListToArray($strPath,"*")
+    If @error = 1 Then
+        MsgBox($MB_SYSTEMMODAL, "", "Path was invalid.")
+        Exit
+    EndIf
+    If @error = 4 Then
+        MsgBox($MB_SYSTEMMODAL, "", "No file(s) were found.")
+        Exit
+    EndIf
+	Return($aFileList)
+EndFunc
+;--------------------------------------------------------------------------------------------------------------------------------------------->
+

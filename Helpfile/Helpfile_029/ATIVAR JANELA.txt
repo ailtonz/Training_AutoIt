@@ -1,0 +1,27 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+Func _ATIVAR_JANELA()
+IF $AnaliseCodigo = 1 then ConsoleWrite("_ATIVAR_JANELA" & @CRLF)
+   ;Faz ativação da janela
+   WinActivate("[REGEXPTITLE:" & $WindowTitle & ".+]")
+
+   ;Aguarda ativação da janela por 10 segundos
+   $nSapAtv = WinWaitActive("[REGEXPTITLE:" & $WindowTitle & ".+]", "",10)
+
+   If $iRowCount = 0 or $iRowCount = Null Then
+	 _FileWriteLog($hFile, "[ERRO] ProcessaPlanilha() - Arquivo " & $s_Filename & " sem conteúdo ou arquivo já está aberto.")
+	 MsgBox($MB_ICONERROR, $iMsgTitle, "Erro na abertura do arquivo " & $s_Filename & ". Arquivo sem conteúdo ou arquivo já está aberto.")
+	 _Exit()
+   Else
+	 _FileWriteLog($hFile, "ProcessaPlanilha() - Quantidade de linhas do arquivo Excel: " & $iRowCount)
+   EndIf
+
+   EndFunc

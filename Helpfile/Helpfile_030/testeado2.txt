@@ -1,0 +1,28 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+Const $adOpenStatic = 3
+Const $adLockOptimistic = 3
+Const $adCmdText = 0x0001
+Global $s_Filename=FileGetShortName("C:\Users\80364630\Desktop\TesteADO.xlsx")
+Global $s_Tablename = "[DeParaBradesco$]"
+
+$objConnection = ObjCreate("ADODB.Connection")
+$objRecordSet = ObjCreate("ADODB.Recordset")
+$objConnection.Open ("Provider=Microsoft.Jet.OLEDB.4.0;" & _
+                "Data Source="&$s_Filename&";" & _
+                "Extended Properties=""Excel 8.0;HDR=Yes;"";")
+if @error Then
+    MsgBox(0, "ERROR", "Failed to connect to the database")
+    Exit
+Else
+    MsgBox(0, "Success!", "Connection to database successful!")
+EndIf
+

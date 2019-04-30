@@ -1,0 +1,19 @@
+###
+###
+###
+### Category1 : SCO
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+Func _USUARIO_CONTROLE($Linha)
+IF $AnaliseCodigo = 1 then ConsoleWrite("_USUARIO_CONTROLE" & @CRLF)
+   if (StringInStr($Linha, "SENHA") > 0) or (StringInStr($Linha, "USUARIO NAO AUTORIZADO") > 0) Then
+	  _FileWriteLog($hFile, "[ERRO] ProcessaPlanilha() - Acesso negado.")
+	  MsgBox($MB_ICONERROR, $iMsgTitle, "Erro no acesso. Verifique os dados de acesso informados.")
+	  SendWait("{PAUSE}",$SleepTime)
+	  _Exit()
+   EndIf
+   EndFunc

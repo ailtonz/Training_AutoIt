@@ -1,0 +1,28 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+; Script Function:
+; Simple notepad example with example to send multiple lines.
+
+Run("notepad.exe")
+WinWaitActive("Untitled - Notepad")
+Send("This is some text.")
+WinClose("Untitled - Notepad")
+WinWaitActive("Notepad", "Do you want to save")
+Send("!n")
+
+; Extended Example
+Run("notepad.exe")
+WinWaitActive("Untitled - Notepad")
+Send("This is some text." & @CRLF & "This is on a new line!")
+WinClose("Untitled - Notepad")
+WinWaitActive("Notepad", "Do you want to save")
+Send("!n")
+

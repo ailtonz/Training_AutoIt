@@ -1,0 +1,24 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+func _ALLTRIM($sString, $sTrimChars=' ')
+
+	;  Trim from left first, then right
+
+	$sTrimChars = StringReplace( $sTrimChars, "%%whs%%", " " & chr(9) & chr(11) & chr(12) & @CRLF )
+	local $sStringWork = ""
+
+	$sStringWork = _LTRIM($sString, $sTrimChars)
+	if $sStringWork <> "" then
+		$sStringWork = _RTRIM($sStringWork, $sTrimChars)
+	endif
+	return $sStringWork
+
+endfunc

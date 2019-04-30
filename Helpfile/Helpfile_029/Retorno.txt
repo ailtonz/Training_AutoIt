@@ -1,0 +1,40 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <File.au3>
+#include <MsgBoxConstants.au3>
+
+$sMSG =  Retorno("Registro_BC.txt",22,38,11)
+
+Msgbox (0,"", $sMSG)
+
+Func Retorno ($sFileOpen, $sLin, $sCol, $sCmp)
+
+   $sFilePath = _PathFull(@ScriptDir) & "\" & $sFileOpen
+
+;~    Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+;~    Local $sFileRead  = FileReadLine($hFileOpen, $sLin)
+;~    local $sRetorno = StringMid($sFileRead,$sCol,$sCmp)
+
+;~    local $sRetorno = StringMid(FileReadLine(FileOpen($sFilePath, $FO_READ), $sLin),$sCol,$sCmp)
+
+
+   Local $hFileOpen  = FileOpen($sFilePath, $FO_READ)
+   Local $sFileRead  = FileReadLine($hFileOpen, $sLin)
+   local $sRetorno = StringMid($sFileRead,$sCol,$sCmp)
+
+   Return $sRetorno
+
+
+
+   Return $sRetorno
+
+EndFunc
+

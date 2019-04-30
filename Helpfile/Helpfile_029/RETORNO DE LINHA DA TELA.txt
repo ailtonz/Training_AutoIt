@@ -1,0 +1,33 @@
+###
+###
+###
+### Category1 : SCO
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+Func RetornaLinhaDaTela($Linha)
+IF $AnaliseCodigo = 1 then ConsoleWrite("RetornaLinhaDaTela" & @CRLF)
+	ClipPut("Vazio")
+	Sleep(500)
+	Local $aTela = StringSplit(ClipGet(),@CR)
+	While $aTela[0] <= 1
+		WinActivate("[REGEXPTITLE:" & $WindowTitle & ".+]")
+		;botão Reset
+		MouseMove(1249, 731)
+		MouseClick("left")
+		Sleep(500)
+		Send("{CTRLDOWN}a{CTRLUP}")
+		Send("{CTRLDOWN}c{CTRLUP}")
+		Sleep(500)
+		Local $aTela = StringSplit(ClipGet(),@CR)
+		Sleep(500)
+	WEnd
+	if $Linha = 0 Then
+		Return $aTela
+	else
+		Return _ALLTRIM(_ALLTRIM($aTela[$Linha]),@LF)
+	EndIf
+EndFunc

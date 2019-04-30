@@ -1,0 +1,31 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+
+#include <GUIConstantsEx.au3> ; constante para GUI eventos
+#include <EditConstants.au3> ; constante para editar
+#include <MsgBoxConstants.au3>
+
+teste()
+
+func teste()
+
+WinActivate("Pesquisa de cliente/conta")
+	; verifica se a janela existe
+If WinExists("Pesquisa de cliente/conta") Then
+	    MsgBox($MB_ICONWARNING,"","Achou!")
+		Return 0
+Else
+		MsgBox($MB_ICONWARNING,"","Não Achou!")
+
+EndIf
+
+EndFunc
+

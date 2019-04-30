@@ -1,0 +1,31 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <GUIConstants.au3>
+
+Dim $GUIWidth, $GUIHeight
+
+$GUIWidth = 250
+$GUIHeight = 250
+
+GUICreate("New GUI", $GUIWidth, $GUIHeight)
+$List_1 = GUICtrlCreateList("", 10, 10, 230, 230)
+GUICtrlSetData($List_1, "|Item 2|Item 3|||Item 6")
+
+GUISetState(@SW_SHOW)
+
+Do
+   Sleep(25)
+   $msg = GUIGetMsg()
+Until $msg = $GUI_EVENT_CLOSE
+
+GUIDelete()
+Exit
+

@@ -1,0 +1,916 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+;include necessarios
+#include <GUIConstantsEx.au3> ; constante para GUI eventos
+#include <EditConstants.au3> ; constante para editar
+#include <MsgBoxConstants.au3>
+#include <WindowsConstants.au3>
+#include <File.au3>
+#include <Date.au3>
+#include <Array.au3>
+#include <GuiListView.au3>
+#include <Constants.au3>
+
+Opt("GUIOnEventMode",1)
+
+;Variáveis para armazenar informações de De X Para contas Bradesco e Itaú
+Local $aArrayListBradesco [15][4]
+Local $aArrayListItau [15][4]
+
+;Variáveis para utilização na conexão ADODB
+Const $adOpenStatic = 3
+Const $adLockOptimistic = 3
+Const $adCmdText = 0x0001
+
+;Endereço do Arquivo de De X Para
+Global $s_Filename= _PathFull(@ScriptDir) & "\DeParaContas.xlsx"
+
+;Variáveis de conexão ADODB
+Global $objConnection = ObjCreate("ADODB.Connection")
+Global $objRsBradesco = ObjCreate("ADODB.Recordset")
+Global $objRsItau = ObjCreate("ADODB.Recordset")
+
+;Abertura da Conexão ADODB
+$objConnection.Open ("Provider=Microsoft.Ace.OLEDB.12.0;" & _
+                "Data Source="&$s_Filename&";" & _
+                "Extended Properties=""Excel 12.0;HDR=Yes;"";")
+
+; Chamada de Consulta ADODB.Recordset - Para informações da planilha Bradesco.
+Global $s_Tablename = "[DeParaBradesco$]"
+$objRsBradesco.Open ("Select * FROM"& $s_Tablename , $objConnection, $adOpenStatic, $adLockOptimistic, $adCmdText)
+
+;Chamada de função que retorna o nome dos arquivos de conciliação Bradesco de acordo com o dia de processamento
+Local $aListFilesBradesco = returnFindFiles("Bradesco","CB" & @MDAY & @MON &"*.RET")
+
+;Valida o numero de arquivos encontrados
+Global $iArqBra = 0
+$iArqBra = UBound($aListFilesBradesco)
+if $iArqBra > 0 then
+
+   ;Chamada de função que retorna em um Array List os arquivos com seus respectivos De x Para's
+   Local $aArrayListWiewBradesco = retornaArrayDePara("Bradesco",$aListFilesBradesco,$objRsBradesco,40,7)
+   $objRsBradesco.close
+
+endif
+
+; Chamada de Consulta ADODB.Recordset - Para informações da planilha Itau.
+Global $s_Tablename = "[DeParaItau$]"
+$objRsItau.Open ("Select * FROM"& $s_Tablename , $objConnection, $adOpenStatic, $adLockOptimistic, $adCmdText)
+
+;Chamada de função que retorna o nome dos arquivos de conciliação de acordo com o dia de processamento
+Local $aListFilesItau = returnFindFiles("Itau","CN" & @MDAY-1 & @MON & "*.RET")
+
+;Valida o numero de arquivos encontrados
+Global $iArqItau = 0
+$iArqItau = UBound($aListFilesItau)
+if $iArqItau > 0 then
+   ;Chamada de função que retorna em um Array List os arquivos com seus respectivos De x Para's
+   Local $aArrayListWiewItau = retornaArrayDePara("Itau",$aListFilesItau,$objRsItau,27,12)
+    $objRsItau.close
+endif
+
+; criação do formulário
+Local $hGUI = GUICreate("Conciliação Microsiga", 655, 500)
+GUISetOnEvent($GUI_EVENT_CLOSE, "CLOSEButton")
+
+; Criação do Controle de data (1)
+Global $idDateProcesso = GUICtrlCreateDate(@YEAR & "/" & @MON & "/" & @MDAY, 4, 25, 100, 20,$DTS_SHORTDATEFORMAT)
+GUICtrlSetOnEvent($idDateProcesso, "setDateProcesso")
+
+; Criação do Controle Data(2)
+Global $idDateConciliacao = GUICtrlCreateDate(validaData(@YEAR & "/" & @MON & "/" & @MDAY -1), 120, 25, 100, 20,$DTS_SHORTDATEFORMAT)
+GUICtrlSetOnEvent($idDateConciliacao, "carregaListWiew")
+
+;Criação dos labels dos controles de data
+Local $sFont = "Comic Sans MS"
+GUISetFont(7, 900, 1, $sFont)
+$hLabelDateProcesso = GUICtrlCreateLabel("Data do Processo:", 4, 9, 90, 15)
+$hLabelDateConciliacao = GUICtrlCreateLabel("Data da Conciliação:", 121, 9, 125, 15)
+
+GUISetFont(8.5, 900, 4, $sFont)
+$hLabelListBradesco = GUICtrlCreateLabel("Arquivos de Conciliação Bradesco", 80, 130, 180, 15,Default,$WS_EX_TRANSPARENT)
+$hLabelListItau = GUICtrlCreateLabel("Arquivos de Conciliação Itaú", 420, 130, 180, 15)
+
+GUISetFont(7, 900, 1, $sFont)
+;Criação de Lista para exibição dos arquivos Bradesco e Itaú
+Global $idListBradesco = GUICtrlCreateListView("Nome do Arquivo|Filial|Agência|Conta", 4, 150, 320, 150) ;,$LVS_SORTDESCENDING)
+
+;Carrega no listView o nome do arquivo, filial, agencia e conta corrente dos arquivos encontrados
+if $iArqBra > 0 then
+   for $iIndex = 0 to UBound($aArrayListWiewBradesco)-1
+	  GUICtrlCreateListViewItem($aArrayListWiewBradesco[$iIndex][0] & "|" & _
+								$aArrayListWiewBradesco[$iIndex][1] & "|" & _
+								$aArrayListWiewBradesco[$iIndex][2] & "|" & _
+								$aArrayListWiewBradesco[$iIndex][3],$idListBradesco)
+
+   Next
+endif
+
+;Criação de Lista para exibição dos arquivos Bradesco e Itaú
+Global $idListItau = GUICtrlCreateListView("Nome do Arquivo|Filial|Agência|Conta", 330, 150, 320, 150) ;,$LVS_SORTDESCENDING)
+
+;Carrega no listView o nome do arquivo, filial, agencia e conta corrente dos arquivos encontrados
+if $iArqItau > 0 then
+   for $iIndex = 0 to UBound($aArrayListWiewItau)-1
+	  GUICtrlCreateListViewItem($aArrayListWiewItau[$iIndex][0] & "|" & _
+								$aArrayListWiewItau[$iIndex][1] & "|" & _
+								$aArrayListWiewItau[$iIndex][2] & "|" & _
+								$aArrayListWiewItau[$iIndex][3],$idListItau)
+
+   Next
+endif
+
+Global $hSalvaInputUser
+Global $hSalvaInputPass
+
+; pede o usuario que vai acessar o Microsiga - labels
+GUISetFont(8, 900, 1, $sFont)
+global $hLabelUser = GUICtrlCreateLabel("Usuário do Microsiga:", 10, 350, 400, 20)
+global $hLabelPass = GUICtrlCreateLabel("Senha do Microsiga:", 140, 350, 380, 20)
+
+; pede o usuario que vai acessar o Microsiga - textbox
+global $hInputUser = GUICtrlCreateInput("", 10, 365, 120, 25)
+global $hInputPass = GUICtrlCreateInput("", 140, 365, 120, 25, "35")
+
+; botao ok
+$hButton = GUICtrlCreateButton("OK", 10, 390, 100, 25)
+GUICtrlSetOnEvent($hButton, "OKButton")
+
+global $idCheckbox = GUICtrlCreateCheckbox("Microsiga já aberto", 10, 315, 185, 25)
+GUICtrlSetOnEvent($idCheckbox, "HideInput")
+
+; mostra o GUI
+GUISetState(@SW_SHOW)
+
+; while loop para deixar a janela aberta
+While 1
+	Sleep(10); comando para nao usar muito a CPU
+WEnd
+
+;Função monta a Array com a lista com os numeros de contas para cada filial
+func retornaArrayDePara($sFolderName,$aListFiles,$objRecordset,$iTamanho,$iComprimento)
+
+   global $aArrayList[10][4]
+   local $sFile
+   local $iIndex = 0
+   for $sFile in $aListFiles
+	  if StringLen($sFile) > 2 then
+
+		 $fileName = _PathFull(@ScriptDir ) & "\" & $sFolderName &"\" & $sFile
+		 FileOpen($fileName, 0)
+		 $line = FileReadLine($fileName, 1)
+		 $sNumeroTxt = StringMid($line,$iTamanho,$iComprimento)
+		 FileClose($fileName)
+
+		 $objRecordset.MoveFirst
+		 while not $objRecordset.eof
+			if $sNumeroTxt = $objRecordset.Fields(0).value Then
+
+			   $aArrayList[$iIndex][0] = $sFile
+			   $aArrayList[$iIndex][1] = $objRecordset.Fields(1).value
+			   $aArrayList[$iIndex][2] = $objRecordset.Fields(3).value
+			   $aArrayList[$iIndex][3] = $objRecordset.Fields(4).value
+
+			   $iIndex = $iIndex + 1
+			   ExitLoop
+			Endif
+			$objRecordset.MoveNext
+		 wend
+	  endif
+   next
+   $objRecordset.close
+   Return $aArrayList
+
+EndFunc
+
+Func CLOSEButton() ; funcao para fechar a janela de usuario e senha
+	Exit
+EndFunc
+
+Func HideInput() ; funcao para fechar a janela de usuario e senha
+	 global $iValueCheck  = GUICtrlRead($idCheckbox)
+
+	  if $iValueCheck = 1 then
+		 GUICtrlSetState($hInputUser,$GUI_DISABLE)
+		 GUICtrlSetState($hInputPass,$GUI_DISABLE)
+	  else
+		 GUICtrlSetState($hInputUser,$GUI_ENABLE)
+		 GUICtrlSetState($hInputPass,$GUI_ENABLE)
+	  endif
+
+EndFunc
+
+func setDateProcesso()
+
+   Global $sNewDateProcesso = dateFormat(GUICtrlRead($idDateProcesso))
+   Global $sNewDateConciliacao = validaData(_DateAdd('d',-1, $sNewDateProcesso))
+   GUICtrlSetData($idDateConciliacao,$sNewDateConciliacao)
+
+   carregaListWiew()
+EndFunc
+func carregaListWiew()
+
+   ;Limpa a lista de arquivos já carregados
+   _GUICtrlListView_DeleteAllItems($idListBradesco)
+
+   ;Abertura da Conexão ADODB
+   $objConnection.Open ("Provider=Microsoft.Ace.OLEDB.12.0;" & _
+                "Data Source="&$s_Filename&";" & _
+                "Extended Properties=""Excel 12.0;HDR=Yes;"";")
+
+   ; Chamada de Consulta ADODB.Recordset - Para informações da planilha Bradesco.
+   Global $s_Tablename = "[DeParaBradesco$]"
+   $objRsBradesco.Open ("Select * FROM"& $s_Tablename , $objConnection, $adOpenStatic, $adLockOptimistic, $adCmdText)
+
+   ;Chamada de função que retorna o nome dos arquivos de conciliação Bradesco de acordo com o dia de processamento
+   Local $aListFilesBradesco = returnFindFiles("Bradesco","CB" & StringRight(dateFormat(GUICtrlRead($idDateProcesso)),2) & StringMid(dateFormat(GUICtrlRead($idDateProcesso)),6,2) &"*.RET")
+
+   ;Valida o numero de arquivos encontrados
+   Global $iArqBra = 0
+   $iArqBra = UBound($aListFilesBradesco)
+   if $iArqBra > 0 then
+
+	  ;Chamada de função que retorna em um Array List os arquivos com seus respectivos De x Para's
+	  Local $aArrayListWiewBradesco = retornaArrayDePara("Bradesco",$aListFilesBradesco,$objRsBradesco,40,7)
+	  $objRsBradesco.close
+
+	  for $iIndex = 0 to UBound($aArrayListWiewBradesco)-1
+		 GUICtrlCreateListViewItem($aArrayListWiewBradesco[$iIndex][0] & "|" & _
+								   $aArrayListWiewBradesco[$iIndex][1] & "|" & _
+								   $aArrayListWiewBradesco[$iIndex][2] & "|" & _
+								   $aArrayListWiewBradesco[$iIndex][3],$idListBradesco)
+
+	  Next
+   endif
+
+   _GUICtrlListView_DeleteAllItems($idListItau)
+
+   ; Chamada de Consulta ADODB.Recordset - Para informações da planilha Bradesco.
+   Global $s_Tablename = "[DeParaItau$]"
+   $objRsItau.Open ("Select * FROM"& $s_Tablename , $objConnection, $adOpenStatic, $adLockOptimistic, $adCmdText)
+
+   ;Chamada de função que retorna o nome dos arquivos de conciliação Bradesco de acordo com o dia de processamento
+   Local $aListFilesItau = returnFindFiles("Itau","CN" & StringRight(dateFormat(GUICtrlRead($idDateConciliacao)),2) & StringMid(dateFormat(GUICtrlRead($idDateConciliacao)),6,2) &"*.RET")
+
+   ;Valida o numero de arquivos encontrados
+   Global $iArqItau = 0
+   $iArqItau = UBound($aListFilesItau)
+   if $iArqItau > 0 then
+
+	  ;Chamada de função que retorna em um Array List os arquivos com seus respectivos De x Para's
+	  Local $aArrayListWiewItau = retornaArrayDePara("Itau",$aListFilesItau,$objRsItau,27,12)
+	  $objRsItau.close
+
+	  for $iIndex = 0 to UBound($aArrayListWiewItau)-1
+		 GUICtrlCreateListViewItem($aArrayListWiewItau[$iIndex][0] & "|" & _
+								   $aArrayListWiewItau[$iIndex][1] & "|" & _
+								   $aArrayListWiewItau[$iIndex][2] & "|" & _
+								   $aArrayListWiewItau[$iIndex][3],$idListItau)
+
+	  Next
+   endif
+endfunc
+
+ Func OKButton() ; funcao do botao ok para processamento do fluxo automatizado
+
+$iValueCheck  = GUICtrlRead($idCheckbox)
+
+;Valida se o usuário informou que o Microsiga está aberto
+if $iValueCheck  = 4 then
+    ;Identificação do arquivo executável do Microsiga
+	Local $sFile = _PathFull(@ScriptDir ) & "\MICROSIGA\Smartclient.exe"
+    $iFileExists = FileExists($sFile)
+
+	; Valida se o arquivo do Microsiga existe no caminho definido
+    If $iFileExists = 0 Then
+	   MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Arquivo do Microsiga Smartclient.exe não encontrado! - " & @CRLF & $sFile)
+	   exit
+	EndIf
+
+	$iQtdArq = $iArqBra + $iArqItau
+	if $iQtdArq = 0 then
+	  MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Não foram localizados arquivos para a data informada!")
+	  return 0
+    endif
+
+	;Ativa o controle do GUI
+	$hSalvaInputUser = WinWait("[ACTIVE]", "", 10)
+    $hSalvaInputPass = WinWait("[ACTIVE]", "", 10)
+
+	;Grava nas variáveis o texto digitado pelo usuário
+	global $sSalvaInputUser = ControlGetText($hSalvaInputUser, "", "Edit1")
+    global $sSalvaInputPass = ControlGetText($hSalvaInputPass, "", "Edit2")
+
+	;Valida o número de caracteres preenchido pelo usuário
+	if StringLen($sSalvaInputUser) < 8 Then
+		 MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Identificação de usuário deve ter 8 caracteres!")
+		 Return 0
+    endif
+
+	;Valida o preenchimento do campo senha
+	if StringLen($sSalvaInputPass) = 0 Then
+		 MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Favor preencher o campo senha!")
+		 Return 0
+    endif
+
+	;Chama a aplicação do Micorsiga no caminho especificado
+	Local $iPID = ShellExecute($sFile)
+	Sleep(3000)
+
+	WinActivate(" Parâmetros Iniciais")
+	; verifica se a janela existe
+	If WinExists(" Parâmetros Iniciais") Then
+		Local $hWnd = WinWait(" Parâmetros Iniciais", "", 10)
+	    Send("{ENTER}")
+	 Else
+		MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Erro no Processamento, tela de parâmetros não carregada!")
+	    Exit
+	EndIf
+	Sleep(1000)
+
+	WinActivate("TOTVS Série T Serviços (Microsiga) 02.9.0001")
+	If WinExists("TOTVS Série T Serviços (Microsiga) 02.9.0001") Then
+
+		;Preenchimento dos campos com o identificação de usuário e senha preenchidos no formulário
+		Local $hWnd = WinWait("TOTVS Série T Serviços (Microsiga) 02.9.0001", "", 10)
+		Local $aClientSize = WinGetClientSize($hWnd)
+	    Send($sSalvaInputUser,1)
+		Send("{TAB}")
+		Send($sSalvaInputPass,1)
+
+		 ;Valida tamanho da tela. Para ajustar posição da tela Desktop ou Notebook
+		 if $aClientSize[0] = 1366 then
+			MouseMove(1059, 395)
+		 ElseIf $aClientSize[0] = 1600 then
+			MouseMove(1173, 395)
+		 ElseIf $aClientSize[0] = 1280 then
+			MouseMove(1013, 393)
+		 Else
+			MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Resolução da tela não contempla as resoluções mapeadas!")
+			exit
+		 endif
+
+		MouseClick("left")
+
+		;ok nos passos da tela
+		;Valida tamanho da tela. Para ajustar posição da tela Desktop ou Notebook
+		 Sleep(1000)
+		 if $aClientSize[0] = 1366 then
+			MouseMove(970, 416)
+		 Elseif $aClientSize[0] = 1600 then
+			MouseMove(1091, 416)
+		 Elseif $aClientSize[0] = 1280 then
+			MouseMove(931, 416)
+		 EndIf
+
+	    MouseClick("left")
+
+		 Sleep(2000)
+		 ;Caso retorne mensagem de erro, finaliza processamento
+		 WinActivate("Finalizar")
+		 If WinExists("Finalizar") Then
+			MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Erro de Logon no Microsiga!")
+			Send("{TAB}")
+			Send("{SPACE}")
+			Exit
+		 EndIf
+
+		 ;Caso retorne mensagem de troca de senha, avançar
+		WinActivate("VENCMOD2")
+		 If WinExists("VENCMOD2") Then
+			Send("{TAB}")
+			Send("{SPACE}")
+			Sleep(2000)
+		 EndIf
+
+     Else
+		MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Erro no Processamento, tela do Microsiga não carregada!")
+	    Exit
+	 EndIf
+  EndIf
+
+   ;Valida se o sistema Microsiga está realmente aberto!
+   $hWnd = WinActivate("TOTVS Série T Serviços (Microsiga) 02.9.0001")
+   If not WinExists("TOTVS Série T Serviços (Microsiga) 02.9.0001") Then
+	  MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Sistema Microsiga não encontrado!")
+	  exit
+   endif
+
+   Local $iListWiewBrad
+     For $iListWiewBrad = 0 to _GUICtrlListView_GetItemCount($idListBradesco)-1
+		 $sText = _GUICtrlListView_GetItemTextArray($idListBradesco,$iListWiewBrad)
+
+		 if StringLen($sText[1])>9 Then
+
+			$hWnd = WinActivate("TOTVS Série T Serviços (Microsiga) 02.9.0001")
+			If WinExists("TOTVS Série T Serviços (Microsiga) 02.9.0001") Then
+			   Local $aClientSize = WinGetClientSize($hWnd)
+
+				  ;Valida tamanho da tela
+				  if $aClientSize[0] = 1366 then
+
+					 MouseMove(471, 700)
+					 MouseClick("left")
+					 Sleep(2000)
+
+					 MouseMove(592, 389)
+					 MouseClick("left")
+					 Sleep(1000)
+
+					 Send($sText[2],1)
+
+					 MouseMove(686, 504)
+					 MouseClick("left")
+					 Sleep(1000)
+
+				  ElseIf $aClientSize[0] = 1600 then
+
+					 MouseMove(693, 833)
+					 MouseClick("left")
+					 Sleep(2000)
+
+					 MouseMove(696, 455)
+					 MouseClick("left")
+					 Sleep(1000)
+
+					 Send($sText[2],1)
+
+					 MouseMove(808, 574)
+					 MouseClick("left")
+					 Sleep(1000)
+
+				  ElseIf $aClientSize[0] = 1280 then
+
+					 MouseMove(379, 732)
+					 MouseClick("left")
+					 Sleep(2000)
+
+					 MouseMove(561, 406)
+					 MouseClick("left")
+					 Sleep(1000)
+
+					 Send($sText[2],1)
+
+					 MouseMove(648, 521)
+					 MouseClick("left")
+					 Sleep(1000)
+
+				  Else
+					 MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Resolução da tela não contempla as resoluções mapeadas!")
+					 exit
+				  EndIf
+
+			   ;Caso retorne mensagem de troca de senha, avançar
+				WinActivate("VENCMOD2")
+				If WinExists("VENCMOD2") Then
+				   Send("{TAB}")
+				   Send("{SPACE}")
+				   Sleep(1000)
+			    EndIf
+
+			   $hWnd = WinActivate("TOTVS Série T Serviços (Microsiga) 02.9.0001")
+			   Local $aClientSize = WinGetClientSize($hWnd)
+
+				  ;Valida tamanho da tela
+				  if $iListWiewBrad = 0 then
+					 if $aClientSize[0] = 1366 then
+
+						MouseMove(80, 336)
+						MouseClick("left")
+						Sleep(1000)
+
+						MouseMove(467, 640)
+						MouseClick("left")
+						Sleep(1000)
+
+					 ElseIf $aClientSize[0] = 1600 then
+
+						MouseMove(90, 336)
+						MouseClick("left")
+						Sleep(1000)
+
+						MouseMove(467, 640)
+						MouseClick("left")
+						Sleep(1000)
+
+					 ElseIf $aClientSize[0] = 1280 then
+
+						MouseMove(81, 336)
+						MouseClick("left")
+						Sleep(1000)
+
+						MouseMove(460, 641)
+						MouseClick("left")
+						Sleep(1000)
+
+					 endif
+				  Else
+					 if $aClientSize[0] = 1366 then
+
+						MouseMove(467, 640)
+						MouseClick("left")
+						Sleep(1000)
+
+					 ElseIf $aClientSize[0] = 1600 then
+
+						MouseMove(467, 640)
+						MouseClick("left")
+						Sleep(1000)
+
+					 ElseIf $aClientSize[0] = 1280 then
+
+						MouseMove(460, 641)
+						MouseClick("left")
+						Sleep(1000)
+
+					 endif
+				  endif
+
+
+					 WinActivate("TOTVS")
+					 If WinExists("TOTVS") Then
+						Send("{TAB}")
+						Send("{SPACE}")
+						Sleep(1000)
+					 endif
+
+					$hWnd = WinActivate("TOTVS Série T Serviços (Microsiga) 02.9.0001")
+					 Local $aClientSize = WinGetClientSize($hWnd)
+
+					 if $aClientSize[0] = 1366 then
+						MouseMove(820, 388)
+						MouseClick("left")
+						Sleep(1000)
+					 Elseif $aClientSize[0] = 1600 then
+						MouseMove(866,451)
+						MouseClick("left")
+						Sleep(1000)
+					 Elseif $aClientSize[0] = 1280 then
+						MouseMove(668,404)
+						MouseClick("left")
+						Sleep(1000)
+					 endif
+
+				  Send(_PathFull(@ScriptDir ) & "\Bradesco\" & $sText[1],1)
+				  Sleep(1000)
+
+				  Send("{TAB}")
+				  Send("BRADES.RET",1)
+
+				  Send("{TAB}")
+				  Send("237",1)
+				  Sleep(1000)
+
+;~ 				  Send("{TAB}")
+				  Send($sText[3],1)
+
+;~				  Send("{TAB}")
+				  Send($sText[4],1)
+
+				  Send("{TAB}")
+				  Send("000",1)
+
+
+				  if $aClientSize[0] = 1366 then
+
+					 MouseMove(794, 472)
+					 MouseClick("left")
+					 Sleep(2000)
+
+					 MouseMove(985, 661)
+					 ;Ativar apenas quando for realizar teste
+					 MouseClick("left")
+					 Sleep(10000)
+
+					 if MsgBox($MB_YESNO, "Conciliação Microsiga", "Deseja Continuar Processamento?") = $IDYES Then
+						MouseMove(1156, 661)
+						MouseClick("left")
+						Sleep(2000)
+					 Else
+						MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Processo Cancelado pelo usuário!")
+						exit
+					 endif
+
+				  Elseif $aClientSize[0] = 1600 then
+
+					 MouseMove(912,539)
+					 MouseClick("left")
+					 Sleep(2000)
+
+					 MouseMove(1225,793)
+					 ;Ativar apenas quando for realizar teste
+					 MouseClick("left")
+					 Sleep(10000)
+
+					 if MsgBox($MB_YESNO, "Conciliação Microsiga", "Deseja Continuar Processamento?") = $IDYES Then
+						MouseMove(1390, 792)
+						MouseClick("left")
+						Sleep(2000)
+					 Else
+						MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Processo Cancelado pelo usuário!")
+						exit
+					 endif
+
+				  Elseif $aClientSize[0] = 1280 then
+
+					 MouseMove(751,491)
+					 MouseClick("left")
+					 Sleep(2000)
+
+					 MouseMove(895,693)
+					 ;Ativar apenas quando for realizar teste
+					 MouseClick("left")
+					 Sleep(10000)
+
+					 if MsgBox($MB_YESNO, "Conciliação Microsiga", "Deseja Continuar Processamento?") = $IDYES Then
+						MouseMove(1069, 693)
+						MouseClick("left")
+						Sleep(2000)
+					 Else
+						MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Processo Cancelado pelo usuário!")
+						exit
+					 endif
+
+				  EndIf
+			Endif
+		 Endif
+	 Next
+
+   For $iListWiewItau = 0 to _GUICtrlListView_GetItemCount($idListItau)-1
+			$sText = _GUICtrlListView_GetItemTextArray($idListItau,$iListWiewItau)
+
+			if StringLen($sText[1])>9 Then
+
+			$hWnd =  WinActivate("TOTVS Série T Serviços (Microsiga) 02.9.0001")
+			If WinExists("TOTVS Série T Serviços (Microsiga) 02.9.0001") Then
+			   Local $aClientSize = WinGetClientSize($hWnd)
+
+				  ;Valida tamanho da tela
+				  if $aClientSize[0] = 1366 then
+
+					 MouseMove(471, 700)
+					 MouseClick("left")
+					 Sleep(2000)
+
+					 MouseMove(592, 389)
+					 MouseClick("left")
+					 Sleep(1000)
+
+					 Send($sText[2],1)
+
+					 MouseMove(686, 504)
+					 MouseClick("left")
+					 Sleep(1000)
+
+				  ElseIf $aClientSize[0] = 1600 then
+
+					 MouseMove(693, 833)
+					 MouseClick("left")
+					 Sleep(2000)
+
+					 MouseMove(696, 455)
+					 MouseClick("left")
+					 Sleep(1000)
+
+					 Send($sText[2],1)
+
+					 MouseMove(808, 574)
+					 MouseClick("left")
+					 Sleep(1000)
+
+				  ElseIf $aClientSize[0] = 1280 then
+
+					 MouseMove(380, 735)
+					 MouseClick("left")
+					 Sleep(2000)
+
+					 MouseMove(560, 406)
+					 MouseClick("left")
+					 Sleep(1000)
+
+					 Send($sText[2],1)
+
+					 MouseMove(650, 521)
+					 MouseClick("left")
+					 Sleep(1000)
+				  Else
+					 MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Resolução da tela não contempla as resoluções mapeadas!")
+					 exit
+				  EndIf
+
+			   ;Caso retorne mensagem de troca de senha, avançar
+				WinActivate("VENCMOD2")
+				If WinExists("VENCMOD2") Then
+				   Send("{TAB}")
+				   Send("{SPACE}")
+				   Sleep(1000)
+			    EndIf
+
+			  $hWnd = WinActivate("TOTVS Série T Serviços (Microsiga) 02.9.0001")
+			   Local $aClientSize = WinGetClientSize($hWnd)
+
+				 ;Valida tamanho da tela
+				  if ($iListWiewBrad = 0 AND $iListWiewItau = 0) then
+					 if $aClientSize[0] = 1366 then
+
+						MouseMove(80, 336)
+						MouseClick("left")
+						Sleep(1000)
+
+						MouseMove(467, 640)
+						MouseClick("left")
+						Sleep(1000)
+
+					 ElseIf $aClientSize[0] = 1600 then
+
+						MouseMove(90, 336)
+						MouseClick("left")
+						Sleep(1000)
+
+						MouseMove(467, 640)
+						MouseClick("left")
+						Sleep(1000)
+
+					 ElseIf $aClientSize[0] = 1280 then
+
+						MouseMove(81, 336)
+						MouseClick("left")
+						Sleep(1000)
+
+						MouseMove(460, 641)
+						MouseClick("left")
+						Sleep(1000)
+
+					 endif
+				  Else
+					 if $aClientSize[0] = 1366 then
+
+						MouseMove(467, 640)
+						MouseClick("left")
+						Sleep(1000)
+
+					 ElseIf $aClientSize[0] = 1600 then
+
+						MouseMove(467, 640)
+						MouseClick("left")
+						Sleep(1000)
+
+					 ElseIf $aClientSize[0] = 1280 then
+
+						MouseMove(460, 641)
+						MouseClick("left")
+						Sleep(1000)
+
+					 endif
+				  endif
+
+					 WinActivate("TOTVS")
+					 If WinExists("TOTVS") Then
+						Send("{TAB}")
+						Send("{SPACE}")
+						Sleep(1000)
+					 endif
+
+					 WinActivate("TOTVS Série T Serviços (Microsiga) 02.9.0001")
+					 Local $aClientSize = WinGetClientSize($hWnd)
+
+					 if $aClientSize[0] = 1366 then
+						MouseMove(820, 388)
+						MouseClick("left")
+						Sleep(1000)
+					 Elseif $aClientSize[0] = 1600 then
+						MouseMove(866,451)
+						MouseClick("left")
+						Sleep(1000)
+					 Elseif $aClientSize[0] = 1280 then
+						MouseMove(712,403)
+						MouseClick("left")
+						Sleep(1000)
+					 endif
+
+				  Send(_PathFull(@ScriptDir ) & "\Itau\" & $sText[1],1)
+				  Sleep(1000)
+
+				  Send("{TAB}")
+				  Send("ITAU.RET",1)
+
+				  Send("{TAB}")
+				  Send("341",1)
+				  Sleep(1000)
+
+;~ 				  Send("{TAB}")
+				  Send($sText[3],1)
+
+				  Send("{TAB}")
+				  Send($sText[4],1)
+
+				  Send("{TAB}")
+				  Send("001",1)
+
+
+				  if $aClientSize[0] = 1366 then
+
+					 MouseMove(794, 472)
+					 MouseClick("left")
+					 Sleep(2000)
+
+					 MouseMove(985, 661)
+					 ;Ativar apenas quando for realizar teste
+					 MouseClick("left")
+					 Sleep(10000)
+
+					 if MsgBox($MB_YESNO, "Conciliação Microsiga", "Deseja Continuar Processamento?") = $IDYES Then
+						MouseMove(1156, 661)
+						MouseClick("left")
+						Sleep(2000)
+					 Else
+						MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Processo Cancelado pelo usuário!")
+						exit
+					 endif
+
+				  Elseif $aClientSize[0] = 1600 then
+
+					 MouseMove(912,539)
+					 MouseClick("left")
+					 Sleep(2000)
+
+					 MouseMove(1225,793)
+					 ;Ativar apenas quando for realizar teste
+					 MouseClick("left")
+					 Sleep(10000)
+
+					 if MsgBox($MB_YESNO, "Conciliação Microsiga", "Deseja Continuar Processamento?") = $IDYES Then
+						MouseMove(1390, 792)
+						MouseClick("left")
+						Sleep(2000)
+					 Else
+						MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Processo Cancelado pelo usuário!")
+						exit
+					 endif
+
+				  Elseif $aClientSize[0] = 1280 then
+
+					 MouseMove(753,490)
+					 MouseClick("left")
+					 Sleep(2000)
+
+					 MouseMove(898,694)
+					 ;Ativar apenas quando for realizar teste
+					 MouseClick("left")
+					 Sleep(10000)
+
+					 if MsgBox($MB_YESNO, "Conciliação Microsiga", "Deseja Continuar Processamento?") = $IDYES Then
+						MouseMove(1072, 694)
+						MouseClick("left")
+						Sleep(2000)
+					 Else
+						MsgBox($MB_ICONWARNING, "Conciliação Microsiga","Processo Cancelado pelo usuário!")
+						exit
+					 endif
+
+				  EndIf
+
+			   Endif
+			Endif
+		 Next
+
+		 MsgBox($MB_ICONINFORMATION, "Conciliação Microsiga","Arquivos Recebidos, processo finalizado!")
+		 Exit
+EndFunc
+
+Func returnFindFiles($sFolder,$sFind)
+    ; List all the files and folders in the desktop directory using the default parameters and return the full path.
+	Local $sPath = _PathFull(@ScriptDir ) & "\" & $sFolder
+
+    Local $aFileList = _FileListToArray($sPath,$sFind, $FLTA_FILES)
+
+	Return $aFileList
+
+EndFunc   ;==>returnFindFiles
+
+func dateFormat($sDate)
+	  Local $sDay = StringLeft($sDate,2)
+	  Local $sMonth = StringMid($sDate,4,2)
+	  Local $sYear = StringRight($sDate,4)
+
+	  Return $sYear & "/" & $sMonth & "/" & $sDay
+   EndFunc
+
+func validaData($sDate)
+
+   Local $iWeekday = _DateToDayOfWeek(StringLeft($sDate,4), StringMid($sDate,6,2), StringRight($sDate,2))
+   While $iWeekday = 1 or $iWeekday = 7
+		 $sDate = _DateAdd('d',-1, $sDate)
+		 Local $iWeekday = _DateToDayOfWeek(StringLeft($sDate,4), StringMid($sDate,6,2), StringRight($sDate,2))
+   WEnd
+   Return $sDate
+endfunc
+

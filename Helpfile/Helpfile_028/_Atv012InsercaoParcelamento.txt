@@ -1,0 +1,305 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#Include <Excel.au3>
+#include <GUIConstantsEx.au3> ; constante para GUI eventos
+#include <EditConstants.au3> ; constante para editar
+#include <MsgBoxConstants.au3>
+#include <WindowsConstants.au3>
+#include <File.au3>
+#include <Date.au3>
+#include <Array.au3>
+#include <GuiListView.au3>
+#include <Constants.au3>
+#include <ListViewConstants.au3>
+#include <GuiListView.au3>
+
+;Liga a opção de eventos de controle
+Opt("GUIOnEventMode",1)
+
+;Poe no inicio do script <-----------------------
+;Quando pressionar a tecla 'Esc' sai da rotina
+HotKeySet("{Esc}", "CaptureEsc")
+
+;Cria formulário e ativa a a função CloseButton evento fechar do formulário
+Global $hGUI = GUICreate("Inserção de Parcelamento", 520, 250)
+GUISetOnEvent($GUI_EVENT_CLOSE, "CLOSEButton")
+
+;Cria ListWiew com nomes das planilhas carregadas
+Global $idListXls = GUICtrlCreateListView("Nome do Arquivo", 5, 5, 200, 150,$LVS_EX_GRIDLINES)
+
+;Cria ListWiew com nomes das planilhas do arquivo selecionado
+Global $idListSht = GUICtrlCreateListView("Nome da Planilha", 215, 5, 200, 150,$LVS_EX_GRIDLINES)
+
+;Procura e add nome de arquivos xlsx encontrados em Array List
+Local $sPath = _PathFull(@ScriptDir)
+Local $aFileList = _FileListToArray($sPath,"*.xls*", $FLTA_FILES)
+
+;Conta quantidade de registros xlsx encontrados
+Local $iArq = UBound($aFileList)
+
+;Adiciona o nome dos arquivos encontrados na lista $idListXls
+for $iIndex = 0 to UBound($aFileList)-1
+  if StringLen($aFileList[$iIndex]) > 2 then
+	  GUICtrlCreateListViewItem($aFileList[$iIndex],$idListXls)
+	  GUICtrlSetOnEvent(-1, "carregaNomeSht")
+
+	  Local $sFont = "Comic Sans MS"
+	  GUISetFont(7, 900, 1, $sFont)
+  endif
+Next
+
+GUICtrlCreateLabel("*********************************************************************************", 7,165,450, 20)
+GUICtrlCreateLabel("* Para inicar o processo, será necessário deixar a aplicação do SAP aberta! *", 7,180,450, 20)
+GUICtrlCreateLabel("*********************************************************************************", 7,195,450, 20)
+
+$hButton = GUICtrlCreateButton("OK", 5, 220, 90, 25)
+GUICtrlSetOnEvent($hButton, "OKButton")
+
+;Exibe Formulário
+GUISetState(@SW_SHOW, $hGUI)
+
+While 1
+	Sleep(10); comando para nao usar muito a CPU
+WEnd
+
+;Função que carrega o nome das planilhas existentes no arquivo selecionado
+func carregaNomeSht()
+
+;Valida qual arquivo selecionado na lista de Arquivos
+local $iItem = _GUICtrlListView_GetSelectedIndices($idListXls)
+Global $strNomeArq = _GUICtrlListView_GetItemText($idListXls,Number($iItem))
+
+;Cria uma aplicação Excel e abre o arquivo selecionado
+Global $oExcel = ObjCreate("Excel.Application")
+$oExcel.WorkBooks.Open (_PathFull(@ScriptDir ) & "/" & $strNomeArq)
+
+;Limpa a lista de planilhas
+_GUICtrlListView_DeleteAllItems($idListSht)
+
+;Percorre por todas as planilhas do arquivo e adiciona na lista de planilhas
+Local $shtName
+For $shtName In $oExcel.worksheets
+	  if $shtName.Name = "Dados" then
+		 Local $sFont = "Comic Sans MS"
+		 GUISetFont(7, 900, 1, $sFont)
+		 GUICtrlCreateListViewItem($shtName.Name,$idListSht)
+	  endif
+Next
+
+;Fecha o arquivo aberto e elimina a instancia aberta
+$oExcel.WorkBooks($oExcel.WorkBooks.Count).Close (False)
+$oExcel.quit
+EndFunc
+
+Func CLOSEButton() ; funcao para fechar a janela de usuario e senha
+	Exit
+EndFunc
+
+Func OKButton() ; funcao para fechar a janela de usuario e senha
+
+	;verifica se o sistema SAP está aberto!
+	If WinExists("SAP Easy Access") Then
+	   local $hWnd = WinActivate("SAP Easy Access")
+    ElseIf WinExists("Monitoramento Meio T") Then
+	   local $hWnd = WinActivate("Monitoramento Meio T")
+	Else
+	   MsgBox($MB_ICONWARNING, "Inserção de Parcelamento","Achou")
+		 $oExcel.WorkBooks(.WorkBooks.Count).Close
+		 $oExcel.quit
+	    Exit
+	EndIf
+
+   ;Valida o item selecionado
+   local $iItem = _GUICtrlListView_GetSelectedIndices($idListSht)
+   Local $strNomePlan = _GUICtrlListView_GetItemText($idListSht,Number($iItem))
+
+   ;Cria uma aplicação Excel e abre o arquivo selecionado
+   Global $oExcel = ObjCreate("Excel.Application")
+
+   local $rng
+   with $oExcel
+
+	  .WorkBooks.Open (_PathFull(@ScriptDir ) & "/" & $strNomeArq)
+	  local $sht = .WorkBooks(.WorkBooks.Count).Worksheets("Dados")
+	  Global $shtDePara = .WorkBooks(.WorkBooks.Count).Worksheets("DexPara - Apoio")
+
+	  ;Verifica quantos registros deverão ser processados - Conta coluna CNPJ
+	  local $iLinhas = .WorksheetFunction.CountA($sht.Range("C:C"))-1
+	  local $iColumnLinha = $sht.Range("1:1").find("Linha").column
+	  local $iColumnLinhaAtiva = $sht.Range("1:1").find("Linha Ativa").column
+	  Local $iColumnDate = $sht.Range("1:1").find("data doc").column
+	  Local $iColumnProced = $sht.Range("1:1").find("Procedimento").column
+	  Local $iColumnFaturamento = $sht.Range("1:1").find("Faturamento").column
+	  Local $iColumnErro = $sht.Range("1:1").find("Código Atlys").column
+
+;~ 	  Local $iColumnStatus = $sht.Range("1:1").find("Descrição Status").column - Identificação necessária apenas para inserção Manual
+;~ 	  Local $iColumnParcelas = $sht.Range("1:1").find("Qtde de parcelas").column - Identificação necessária apenas para inserção Manual
+;~ 	  local $iColumnPgto = $sht.Range("1:1").find("Forma de Pgto").column - Identificação necessária apenas para inserção Manual
+;~ 	  Local $iColumnPrestacao = $sht.Range("1:1").find("Valor da Prestação").column - Identificação necessária apenas para inserção Manual
+
+	  ;Coluna CNPJ
+	  $rng = $sht.Range("C2")
+	  While StringLen($rng.value) > 0
+		 if $sht.cells($rng.Row,Number($iColumnProced)).value = "Status Monitor 2" AND StringLen($sht.cells($rng.Row,Number($iColumnProced)+1).value) = 0 then
+
+			ControlSetText($hWnd, "", "Edit1", "ZSDT063")
+			ControlFocus ( $hWnd, "", "Edit1")
+			Send("{Enter}")
+			Sleep(2000)
+
+			$sFaturamento = $sht.cells($rng.Row,Number($iColumnFaturamento)).value
+			$sLinha = $sht.cells($rng.Row,Number($iColumnLinha)).value
+
+			;Acessar o controle Faturamento
+			for $iIndex = 1 to 18
+			   Send("{TAB}")
+			Next
+
+			Send($sLinha,1)
+			Sleep(1000)
+			Send("{TAB}")
+			Sleep(1000)
+			Send($sLinha,1)
+			Sleep(1000)
+			Send("{TAB}")
+			Send("{TAB}")
+
+			Sleep(1000)
+			Send($sFaturamento,1)
+			Send("{TAB}")
+			Sleep(1000)
+			Send($sFaturamento,1)
+			Sleep(1000)
+
+			$sErro = $sht.cells($rng.Row,Number($iColumnErro)).value
+
+			;Acessar o controle Código Atlys
+			for $iIndex = 1 to 8
+			  Send("{TAB}")
+			Next
+
+			Sleep(1000)
+			Send($sErro,1)
+			Send("{TAB}")
+			Sleep(1000)
+			Send($sErro,1)
+			Sleep(1000)
+
+			ControlClick($hWnd, "", "Button1")
+			Sleep(2000)
+			Send("{F5}")
+			Sleep(2000)
+			ControlClick($hWnd, "", "Button14")
+			Sleep(2000)
+
+			Local $sText = StringStripWS(WinGetText("[CLASS:SAP_FRONTEND_SESSION]"), $STR_STRIPLEADING + $STR_STRIPTRAILING)
+			Local $sTextArray = StringSplit($sText, @CRLF)
+
+			;Verificar se partida está finalizada
+			if StringLeft($sTextArray[1],10)="Selecionar" then
+			   $sht.cells($rng.Row,Number($iColumnProced)+1) = "Partida já Finalizada"
+			   Send("{F3}")
+
+			Else
+
+			   Sleep(2000)
+			   Send("{TAB}")
+
+			   $sLinhaAtv = $sht.cells($rng.Row,Number($iColumnLinhaAtiva)).value
+			   Send($sLinhaAtv,1)
+
+			   Sleep(2000)
+			   Send("{TAB}")
+
+			   Send("Inserido Via Monitor " & _Now(),1)
+			   Sleep(2000)
+			   Send("{F6}")
+			   Sleep(2000)
+
+
+			   Local $sText = StringStripWS(WinGetText("[CLASS:SAP_FRONTEND_SESSION]"), $STR_STRIPLEADING + $STR_STRIPTRAILING)
+			   Local $sTextArray = StringSplit($sText, @CRLF)
+
+			   ;Validar se a linha começa com o número 94, pois no SAP é realizada validação e número 4 ainda não é considerado número válido de celular
+			   if $sTextArray[1] = "Numero informado  não é uma linha de telefone celular" then
+				  $sht.cells($rng.Row,Number($iColumnProced)+1) = "Numero informado  não é uma linha de telefone celular"
+				  Sleep(2000)
+				  Send("{TAB}")
+				  Send("{TAB}")
+				  Send("{ENTER}")
+				  Sleep(2000)
+				  Send("{F3}")
+				  Sleep(2000)
+				  Send("{F3}")
+				  .WorkBooks(.WorkBooks.Count).Save
+			   Else
+
+				  Sleep(2000)
+				  Send("{TAB}")
+				  Sleep(2000)
+				  Send("{Enter}")
+
+				  Sleep(2000)
+				  Send("{F7}")
+
+				  Sleep(11000)
+
+				  ;Validar efetivação do processo
+				  Local $sText = StringStripWS(WinGetText("[CLASS:SAP_FRONTEND_SESSION]"), $STR_STRIPLEADING + $STR_STRIPTRAILING)
+				  Local $sTextArray = StringSplit($sText, @CRLF)
+
+				  if StringRight($sTextArray[1],7) = "Sucesso" then
+					 $sht.cells($rng.Row,Number($iColumnProced)+1) = "Finalizado"
+				  Else
+					 $sht.cells($rng.Row,Number($iColumnProced)+1) = "Erro de Processamento"
+				  EndIf
+
+				  .WorkBooks(.WorkBooks.Count).Save
+
+				  WinActivate("SAP Easy Access")
+				  Send("{F3}")
+				  ;Send("{F3}")
+				  Sleep(2500)
+			   EndIf
+			EndIf
+		 Endif
+
+		 $rng = $rng.offset(1,0)
+		 ;MsgBox(0,"",$rng.row)
+	  Wend
+
+	   GUISetState(@SW_HIDE, $hGUI)
+	  ;.WorkBooks(.WorkBooks.Count).Close (false)
+	  .quit
+
+	   MsgBox (0,"","Processo Executado Com Sucesso!")
+	  Exit
+   EndWith
+
+
+   if @error Then
+	  if IsObj($oExcel) Then
+		 $oExcel.quit
+		 MsgBox(0,"","Erro Execução, fechamento Aplicação Excel")
+	  EndIf
+   EndIf
+
+
+EndFunc
+
+
+Func CaptureEsc()
+    Switch @HotKeyPressed ; The last hotkey pressed.
+	Case "{ESC}" ; String is the {ESC} hotkey.
+	  Exit
+    EndSwitch
+EndFunc
+

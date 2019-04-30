@@ -1,0 +1,27 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+func _LTRIM($sString, $sTrimChars=' ')
+
+	$sTrimChars = StringReplace( $sTrimChars, "%%whs%%", " " & chr(9) & chr(11) & chr(12) & @CRLF )
+	local $nCount, $nFoundChar
+	local $aStringArray = StringSplit($sString, "")
+	local $aCharsArray = StringSplit($sTrimChars, "")
+
+	for $nCount = 1 to $aStringArray[0]
+		$nFoundChar = 0
+		for $i = 1 to $aCharsArray[0]
+			if $aCharsArray[$i] = $aStringArray[$nCount] then
+				$nFoundChar = 1
+			EndIf
+		next
+		if $nFoundChar = 0 then return StringTrimLeft( $sString, ($nCount-1) )
+	next
+endfunc

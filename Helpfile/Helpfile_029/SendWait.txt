@@ -1,0 +1,19 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+Func SendWait($text,$sleep,$repeat=1,$format="%s",$flag=0)
+IF $AnaliseCodigo = 1 then ConsoleWrite("SendWait: " & $text & @CRLF)
+
+   for $j = 1 to $repeat
+	 Send(StringFormat($format,$text),$flag)
+	 Sleep($sleep/$repeat)
+  Next
+
+EndFunc

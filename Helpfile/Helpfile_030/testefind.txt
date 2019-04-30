@@ -1,0 +1,33 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <Array.au3>
+#include <File.au3>
+#include <MsgBoxConstants.au3>
+
+Example("Bradesco","CB2312*.RET")
+
+Func returnFindFiles($sFolder,$sFind)
+    ; List all the files and folders in the desktop directory using the default parameters and return the full path.
+	Local $sPath = _PathFull(@ScriptDir ) & "\" & $sFolder
+
+    Local $aFileList = _FileListToArray($sPath,$sFind, $FLTA_FILES)
+    If @error = 1 Then
+        Exit
+    EndIf
+    If @error = 4 Then
+        Exit
+    EndIf
+    ; Display the results returned by _FileListToArray.
+
+	Return $aFileList
+
+EndFunc   ;==>Example
+

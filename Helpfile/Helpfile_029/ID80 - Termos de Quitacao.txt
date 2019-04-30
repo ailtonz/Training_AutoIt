@@ -1,0 +1,343 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <MsgBoxConstants.au3>
+#include <Array.au3>
+#include <Math.au3>
+#include <File.au3>
+#include <Excel.au3>
+#include <GUIConstantsEx.au3> ; constante para GUI eventos
+#include <EditConstants.au3> ; constante para editar
+
+;Variáveis
+;---------------------------------------------------------
+Global $objExcel
+Global $wbk
+Global $sht
+Global $fileName
+Global $iLin
+Global $iLinA
+Global $iLinB
+Global $sRng
+Global $aList
+Global $sId
+Global $aTela
+Global $iIndex
+Global $sLinha
+Global $bValida
+Global $Cnl
+;~ Global $User = "E6123830"
+;~ Global $Pwd = "miguel29"
+Global $User
+Global $Pwd
+;---------------------------------------------------------
+
+;Liga a opção de eventos de controle
+Opt("GUIOnEventMode",1)
+
+;Poe no inicio do script <-----------------------
+;Quando pressionar a tecla 'Esc' sai da rotina
+HotKeySet("{END}", "CaptureEsc")
+
+;Cria formulário e ativa a a função CloseButton evento fechar do formulário
+Global $hGUI = GUICreate("Acesso CSO", 300, 90)
+GUISetOnEvent($GUI_EVENT_CLOSE, "CLOSEButton")
+
+; pede o usuario que vai acessar o atis - labels
+GUICtrlCreateLabel("Usuário CSO Com Dígito", 10, 10, 250, 40)
+GUICtrlCreateLabel("Senha do CSO", 140, 10, 380, 40)
+
+global $hInputUser = GUICtrlCreateInput("", 10, 25 ,120, 25)
+global $hInputPass = GUICtrlCreateInput("", 140, 25, 120, 25, "35")
+
+$hButton = GUICtrlCreateButton("OK", 10, 60, 90, 25)
+GUICtrlSetOnEvent($hButton, "OKButton")
+
+;Exibe Formulário
+GUISetState(@SW_SHOW, $hGUI)
+
+While 1
+	Sleep(10); comando para nao usar muito a CPU
+WEnd
+
+
+Func OKButton() ; funcao para fechar a janela de usuario e senha
+
+   ;Lê o usuário e senha do sistema digitado pelo usuário
+   Global $User = ControlGetText($hGUI, "", "Edit1")
+   Global $Pwd = ControlGetText($hGUI, "", "Edit2")
+
+   if StringLen($User) < 8 Then
+	  MsgBox($MB_ICONWARNING,"Termos de Quitação","Usuário Inválido!")
+	  Exit
+   EndIf
+
+   if StringLen($Pwd) < 8 Then
+	  MsgBox($MB_ICONWARNING,"Termos de Quitação","Senha Inválida!")
+	  Exit
+   EndIf
+
+   _RetornaLista()
+   _loginCso()
+   _acessoOperacao()
+   _processaLista()
+
+   Send("/f",1)
+   Send("{ENTER}")
+
+   MsgBox($MB_ICONINFORMATION,"Termos de Quitação","Processo Finalizado Com Sucesso!")
+   Exit
+EndFunc
+
+Func _processaLista()
+
+   for $iIndex = 0 to Ubound($aList)-1
+
+	  $bValida = False
+	  if StringLen($aList[$iIndex][3]) > 0 OR _
+		 StringLen($aList[$iIndex][4]) > 0 OR _
+		 StringLen($aList[$iIndex][5]) > 0 Then
+
+		 $bValida = False
+	  ElseIf StringLen($aList[$iIndex][0]) >= 9 And _
+		 StringLen($aList[$iIndex][2]) = 5 And _
+		 StringLen($aList[$iIndex][2]) <> "00000" Then
+
+		 $sId = "1T" & $aList[$iIndex][0]
+		 $Cnl = $aList[$iIndex][2]
+		 $bValida = True
+	  Elseif StringLen($aList[$iIndex][1]) >= 9 Then
+
+		 $sId = "1N" & $aList[$iIndex][1]
+		 $Cnl = "00000"
+		 $bValida = True
+
+	  ElseIf StringLen($aList[$iIndex][0]) < 9 Then
+		 $bValida = False
+		 _PasteSheet($iIndex+3,3)
+
+	  ElseIf StringLen($aList[$iIndex][0]) >= 9 AND _
+		  (StringLen($aList[$iIndex][2]) <5 OR $aList[$iIndex][2]) = "00000" Then
+		  $bValida = False
+		 _PasteSheet($iIndex+3,4)
+
+	  ElseIf StringLen($aList[$iIndex][1]) < 9 Then
+		 $bValida = False
+		 _PasteSheet($iIndex+3,5)
+	  EndIf
+
+	  if $bValida = True Then
+
+		 Send("o010",1)
+		 Send("{ENTER}")
+		 Sleep(1500)
+
+		 Send($sId,1)
+		 if StringLen($sId) <=11 Then Send("{TAB}")
+		 Sleep(100)
+		 Send($Cnl,1)
+		 Send(stringRight($User,7),1)
+		 Send("{TAB}")
+		 Send("WD",1)
+		 Send("{ENTER}")
+		 Sleep(2000)
+
+		 $aTela = _copiarTela()
+
+		 if StringInStr($aTela[1],"O020-01") > 0 Then
+			_PasteSheet($iIndex+3,1)
+		 ElseIf StringInStr($aTela[1],"Resumo") > 0 Then
+
+			For $iLine = 3 To 22
+			   If StringInStr($aTela[$iLine],"SERV OP") > 0 Then
+				  Send("X",1)
+				  Send("{F1}")
+				  Sleep(500)
+				  _PasteSheet($iIndex+3,1)
+				  ExitLoop
+			   Else
+				  Send("{TAB}")
+			   EndIf
+			Next
+		 Else
+;~ 			MsgBox(0,"","erro")
+			_PasteSheet($iIndex+3,2)
+		 Endif
+	  EndIf
+   Next
+EndFunc
+
+Func _PasteSheet($iRow,$iRetorno)
+
+   if $iRetorno = 1 Then
+	  Sleep(300)
+	  $aTela = _copiarTela()
+	  $sht.Range("D" & $iRow).value = StringReplace(stringMid($aTela[3],8,11),"-","")
+	  $sht.Range("E" & $iRow).value = stringMid($aTela[5],31,10)
+	  $sht.Range("F" & $iRow).value = stringMid($aTela[5],8,5)
+
+   Elseif $iRetorno = 2 Then
+	  $sht.Range("D" & $iRow).value = "Erro!"
+   Elseif $iRetorno = 3 Then
+	   $sht.Range("D" & $iRow).value = "Terminal Inválido"
+   Elseif $iRetorno = 4 Then
+	   $sht.Range("F" & $iRow).value = "CNL Inválido para opção Terminal"
+   Elseif $iRetorno = 5 Then
+	   $sht.Range("E" & $iRow).value = "NRC Inválido"
+   EndIf
+
+   $wbk.Save
+   Send("{pause}")
+   Send("{pause}")
+   Send("{pause}")
+
+EndFunc
+
+
+Func _RetornaLista()
+
+   $fileName = FileOpenDialog("Escolha uma arquivo de Insumos", _PathFull(@ScriptDir), "Excel (**.xlsx;*.xls)")
+   if $fileName <> "" Then
+	  $objExcel = ObjCreate("Excel.Application")
+	  $objExcel.visible = True
+	  $wbk		= $objExcel.WorkBooks.Open ($fileName)
+	  $sht		= $wbk.Worksheets(1)
+	  $iLinA	= _qtdLinExcel("A")
+	  $iLinB	= _qtdLinExcel("B")
+	  $iLin		= _Max ( $iLinA, $iLinB )
+	  $sRange	= "A3:F" & $iLin
+	  $aList	= _Excel_RangeRead($wbk,$sht,$sRange,1,Default)
+   Else
+	  MsgBox($MB_ICONERROR,"Erro Abertura Insumos","Arquivo Excel Não Encontrado!")
+	  Exit
+   EndIf
+
+
+
+EndFunc
+
+Func CLOSEButton() ; funcao para fechar a janela de usuario e senha
+	Exit
+EndFunc
+
+Func _acessoOperacao()
+   Send("F0",1)
+   Send("{ENTER}")
+   Send("{PAUSE}")
+EndFunc
+
+Func _loginCSO()
+
+   Local $telaLine = _copiarLinha(14)
+   if StringInStr($telaLine,"TELECOMUNICACOES") > 0 Then
+	  Send(stringleft($User,7),1)
+	  Sleep(100)
+	  Send("{TAB}")
+	  Send($Pwd,1)
+	  Sleep(100)
+	  Send("{ENTER}")
+   Else
+	  MsgBox($MB_ICONERROR,"Erro Login","Tela de Login não identificada!")
+	  Exit
+   EndIf
+EndFunc
+
+Func _qtdLinExcel($strCol)
+     Return ($sht.Range($strCol & 65536).End(-4162).Row)
+EndFunc
+
+Func _Trim($strString)
+     Return StringStripWS($strString,$STR_STRIPLEADING + $STR_STRIPTRAILING + $STR_STRIPSPACES + $STR_STRIPSPACES)
+EndFunc
+
+Func _iif($cond, $res_true, $res_false)
+	If $cond Then
+		Return $res_true
+	Else
+		Return $res_false
+	EndIf
+EndFunc
+
+Func _copiarTela()
+;Função retorna um array list após copiar a tela do Pw;
+;A tela contem 24 linhas, e será retornado no array as linhas de 1 a 24
+;o parametro 0 mostra a quantidade de linhas
+Local $iTentativa = 1
+
+ClipPut("")
+Local $Tela = StringSplit(ClipGet(),@CR)
+WinActivate("pw3270")
+
+While $Tela[0] <= 1 Or StringLen($Tela[1]) = 0
+
+   ; Verifica se for realizada + de 1 tentativa tenta pegar a tela
+   if $iTentativa > 1 Then
+	  WinActivate("pw3270")
+	  Send("{ESC}")
+   EndIf
+
+   Send("{CTRLDOWN}a{CTRLUP}") ;Crtl + A
+   Send("{CTRLDOWN}c{CTRLUP}") ;Crtl + C
+   Sleep(100)
+
+   Local $Tela = StringSplit(ClipGet(),@CR)
+   Sleep(200)
+
+   $iTentativa = $iTentativa + 1
+WEnd
+
+Return $Tela
+
+EndFunc
+
+Func _copiarLinha($iLinha)
+;Função retorna a linha especifica passada pelo parametro;
+if $iLinha < 1 or  $iLinha > 24 Then
+   MsgBox($MB_ICONERROR,"Erro!", "Numero de Linha Inválida!")
+   Exit
+EndIf
+
+Local $iTentativa = 1
+
+ClipPut("")
+Local $Tela = StringSplit(ClipGet(),@CR)
+WinActivate("pw3270")
+
+While $Tela[0] <= 1
+
+   ; Verifica se for realizada + de 1 tentativa tenta pegar a tela
+   if $iTentativa > 1 Then
+	  WinActivate("pw3270")
+	  Send("{ESC}")
+   EndIf
+
+   Send("{CTRLDOWN}a{CTRLUP}") ;Crtl + A
+   Send("{CTRLDOWN}c{CTRLUP}") ;Crtl + C
+   Sleep(100)
+
+   Local $Tela = StringSplit(ClipGet(),@CR)
+   Sleep(200)
+
+   $iTentativa = $iTentativa + 1
+WEnd
+
+Return $Tela[$iLinha]
+
+EndFunc
+
+Func CaptureEsc()
+    Switch @HotKeyPressed ; The last hotkey pressed.
+	Case "{END}" ; String is the {END} hotkey.
+	   If MsgBox($MB_YESNO,"Rotina Pausada","Deseja Encerrar o Processamento do Robô?") = 6 Then
+		  Exit
+	   EndIf
+    EndSwitch
+ EndFunc
+

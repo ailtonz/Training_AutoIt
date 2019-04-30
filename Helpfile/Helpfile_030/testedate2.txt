@@ -1,0 +1,24 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <Date.au3>
+#include <MsgBoxConstants.au3>
+
+Local $aMyDate, $aMyTime
+_DateTimeSplit("date", $aMyDate, $aMyTime)
+
+For $x = 1 To $aMyDate[0]
+    MsgBox($MB_SYSTEMMODAL, $x, $aMyDate[$x])
+Next
+For $x = 1 To $aMyTime[0]
+    MsgBox($MB_SYSTEMMODAL, $x, $aMyTime[$x])
+Next
+
+

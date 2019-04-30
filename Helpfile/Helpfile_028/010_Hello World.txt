@@ -1,0 +1,17 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+;Basic Example
+MsgBox(0, "Tutorial", "Hello World! - 1")
+
+;Extended Work
+MsgBox(18, "Tutorial", "Hello World! - 2"); Abort, Retry, Ignore with Stop Icon
+MsgBox(32, "Tutorial", "Hello World! - 3"); Normal message box with question icon.
+

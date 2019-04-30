@@ -1,0 +1,52 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <Date.au3>
+#include <File.au3>
+#Include <Excel.au3>
+#include <MsgBoxConstants.au3>
+#include <GUIConstantsEx.au3> ; constante para GUI eventos
+;~ #include <WindowsConstants.au3>
+
+carregaArquivoExcel("testeExcel.xlsm","Dados")
+
+func carregaArquivoExcel($strNomeArq,$shtNome)
+
+   ;Cria uma aplicação Excel e abre o arquivo selecionado
+   Local $sPath = _PathFull(@ScriptDir) & "\" & $strNomeArq
+   Global $oExcel = ObjCreate("Excel.Application")
+   $oExcel.WorkBooks.Open ($sPath)
+   $oExcel.visible = true
+
+   with $oExcel
+
+	  Local $sht = .WorkBooks(.WorkBooks.Count).Worksheets($shtNome)
+
+	  $sht.Activate
+	  Local $UltLinha = .WorksheetFunction.CountA($sht.Range("A:A")) + 1
+
+	  For $x = 1 To $UltLinha - 1
+		 $sht.Range("c" & $x).Value = "'!!!!"
+	  Next
+
+	  ;Fecha o arquivo aberto e elimina a instancia aberta
+	  Local $sArqAtis = StringLeft($strNomeArq,(StringLen($strNomeArq))-5) &"_"& _NowCalcDate() &"_"& StringReplace(_DateTimeFormat(_NowCalc(), 5),":","") & StringRight("testeExcel.xlsm", 5)
+
+
+	  .WorkBooks($oExcel.WorkBooks.Count).Saveas (_PathFull(@ScriptDir) & "\" & StringReplace($sArqAtis,"/","-"))
+	  .WorkBooks($oExcel.WorkBooks.Count).Close (False)
+;~ 	  .WorkBooks($oExcel.WorkBooks.Count).Close (False)
+	  .quit
+
+   EndWith
+
+
+EndFunc
+

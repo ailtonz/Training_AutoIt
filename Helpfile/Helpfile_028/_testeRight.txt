@@ -1,0 +1,35 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+
+#include <MsgBoxConstants.au3>
+#include <GUIConstantsEx.au3> ; constante para GUI eventos
+
+
+;Liga a opção de eventos de controle
+Opt("GUIOnEventMode",1)
+;Poe no inicio do script <-----------------------
+;Quando pressionar a tecla 'Esc' sai da rotina
+HotKeySet("{Esc}", "CaptureEsc")
+
+;~ MsgBox(0,"",StringRight("testeExcel.xlsm",Stringlen(StringLeft("testeExcel.xlsm",(StringLen("testeExcel.xlsm"))-5))))
+
+MsgBox(0,"NomeArquivo",StringLeft("testeExcel.xlsm",(StringLen("testeExcel.xlsm"))-5))
+MsgBox(0,"Extenção",StringRight("testeExcel.xlsm", 5))
+;~ MsgBox(0,"Extenção",StringMid("testeExcel.xlsm",1,(StringLen("testeExcel.xlsm"))-5))
+
+
+Func CaptureEsc()
+    Switch @HotKeyPressed ; The last hotkey pressed.
+	Case "{ESC}" ; String is the {ESC} hotkey.
+	  Exit
+    EndSwitch
+EndFunc
+

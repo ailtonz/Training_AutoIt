@@ -1,0 +1,82 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <ButtonConstants.au3>
+#include <ComboConstants.au3>
+#include <EditConstants.au3>
+#include <GUIConstantsEx.au3>
+#include <StaticConstants.au3>
+#include <WindowsConstants.au3>
+#include <Array.au3>
+
+
+Global $FILIAIS[16] = ["01","03","06","66","AA","AB","AC","AD","AE","AF","AG","AH","AI","AJ","AL","AM"]
+Global $TIPOS_NF[8] = ["Recibo T.Brasil","RPS T.Brasil","Nota Grafica Telesp","Recibo Atrium","Recibo Assist","RPS Servico Atrim","RPS Servico Assist"]
+
+
+#Region ### START Koda GUI section ### Form=c:\users\a.dasilva\desktop\accenture\app\koda_1.7.3.0\forms\form1.kxf
+$Form1_1 = GUICreate("Form1", 614, 220, 192, 124)
+$grpLogin = GUICtrlCreateGroup("LOGIN", 8, 8, 593, 65)
+GUICtrlSetFont(-1, 8, 800, 0, "MS Sans Serif")
+
+$lblName = GUICtrlCreateLabel("USUÁRIO :", 24, 32, 68, 17, $SS_RIGHT)
+$txtName = GUICtrlCreateInput("", 120, 32, 153, 21)
+
+$lblPws = GUICtrlCreateLabel("SENHA :", 280, 32, 54, 17, $SS_RIGHT)
+$txtPwd = GUICtrlCreateInput("", 344, 32, 161, 21, BitOR($GUI_SS_DEFAULT_INPUT,$ES_PASSWORD))
+
+$btnOK = GUICtrlCreateButton("OK", 512, 32, 75, 25)
+
+GUICtrlCreateGroup("", -99, -99, 1, 1)
+
+$grpImpressao = GUICtrlCreateGroup("IMPRESSÃO", 8, 80, 593, 129)
+
+GUICtrlSetFont(-1, 8, 800, 0, "MS Sans Serif")
+
+$lblFilial = GUICtrlCreateLabel("FILIAL :", 16, 104, 49, 17, $SS_RIGHT)
+$cboFilial = GUICtrlCreateCombo("", 120, 104, 121, 25, BitOR($CBS_DROPDOWN,$CBS_AUTOHSCROLL))
+GUICtrlSetData(-1,  _ArrayToString($FILIAIS,"|"))
+
+$lblSerie = GUICtrlCreateLabel("SERIE :", 248, 104, 49, 17, $SS_RIGHT)
+$txtSerie = GUICtrlCreateInput("", 304, 104, 145, 21)
+
+$lblTipoDeNota = GUICtrlCreateLabel("TIPO DE NOTA :", 10, 136, 100, 17, $SS_RIGHT)
+$cboTipoDeNota = GUICtrlCreateCombo("", 120, 136, 329, 25, BitOR($CBS_DROPDOWN,$CBS_AUTOHSCROLL))
+GUICtrlSetData(-1,  _ArrayToString($TIPOS_NF,"|"))
+
+$lblInicio = GUICtrlCreateLabel("DE :", 21, 168, 29, 17, $SS_RIGHT)
+$txtInicio = GUICtrlCreateInput("", 120, 168, 121, 21)
+GUICtrlSetLimit(-1, 6)
+
+$lblFinal = GUICtrlCreateLabel("ATÉ :", 248, 168, 36, 17, $SS_RIGHT)
+$txtFinal = GUICtrlCreateInput("", 304, 168, 145, 21)
+GUICtrlSetLimit(-1, 6)
+
+$btnImprimir = GUICtrlCreateButton("IMPRIMIR", 472, 104, 115, 89)
+GUICtrlSetOnEvent($btnImprimir, "SelecionarArquivoTexto")
+
+GUICtrlCreateGroup("", -99, -99, 1, 1)
+GUISetState(@SW_SHOW)
+
+#EndRegion ### END Koda GUI section ###
+
+While 1
+	$nMsg = GUIGetMsg()
+	Switch $nMsg
+		Case $GUI_EVENT_CLOSE
+			Exit
+
+	EndSwitch
+WEnd
+
+
+
+;~ GUICtrlSetData(-1,$FILIAIS)
+

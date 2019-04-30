@@ -1,0 +1,46 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+#include <GUIConstantsEx.au3>
+
+Opt('MustDeclareVars', 1)
+
+MainGUI()
+
+Func MainGUI()
+  Local $Button1, $Button2, $msg
+  GUICreate("My GUI Window Title")
+
+  Opt("GUICoordMode", 2)
+  $Button1 = GUICtrlCreateButton("Button 1", 10, 30, 100)
+  $Button2 = GUICtrlCreateButton("Button 2", 0, -1)
+
+  GUISetState()
+  GUICtrlSetState($Button2, $GUI_DISABLE)
+
+
+  ; Run the GUI until the window is closed
+  While 1
+    $msg = GUIGetMsg()
+    Select
+     Case $msg = $GUI_EVENT_CLOSE
+       ExitLoop
+     Case $msg = $Button1
+       GUICtrlSetState($Button1, $GUI_DISABLE)
+       GUICtrlSetState($Button2, $GUI_ENABLE)
+       MsgBox(0, 'Button 1', 'Button 1 was pressed')
+     Case $msg = $Button2
+       GUICtrlSetState($Button1, $GUI_ENABLE)
+       GUICtrlSetState($Button2, $GUI_DISABLE)
+       MsgBox(0, 'Button 2', 'Button 2 was pressed')
+    EndSelect
+  WEnd
+EndFunc
+

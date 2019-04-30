@@ -1,0 +1,28 @@
+###
+###
+###
+### Category1 : 
+### Category2 : 
+### Category3 : 
+### Description : 
+###
+###
+###
+
+local $Total = 107553
+local $Resto = Mod($Total, 500)
+
+MsgBox(0,"resto",$Resto)
+Exit
+
+for $x = 1 to $Total
+
+	if $Resto > 0 Then
+		MsgBox(0,"resto",$Resto)
+		$Resto = Mod($Total  - $Resto, 500)
+	Else
+		MsgBox(0,"mod", Mod(107554, 500))
+	EndIf
+
+next
+
